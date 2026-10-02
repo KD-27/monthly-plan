@@ -1,0 +1,5 @@
+* text=auto
+# cmd.exe misreads a .bat with LF-only line endings
+*.bat text eol=crlf
+*.ico binary
+*.png binary

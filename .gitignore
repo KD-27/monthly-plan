@@ -1,0 +1,23 @@
+# Personal log and every copy of it — never commit (spending, weight, notes)
+data/
+data.json
+data.backup.json
+data.corrupt-*.json
+data.old-root-*.json
+*.tmp
+
+# CSV exports of the log
+*.csv
+
+# Personal settings (day one, tasks, points, targets) — config.example.js is the template
+config.local.js
+
+# Python / OS / OneDrive leftovers
+__pycache__/
+*.pyc
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Local-only Claude Code settings
+.claude/settings.local.json

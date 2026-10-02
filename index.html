@@ -2819,11 +2819,15 @@ const fcH = document.getElementById('fcH'), fcM = document.getElementById('fcM')
 
 /** Show a two-digit value on one card; on a change the top half falls to reveal it. */
 function fcSet(card, v, animate){
+  // Land any flip still in the air first. Chrome pauses animations while the window is
+  // hidden, so a flap could stall half-turned and leave two numbers drawn over each other.
+  card.querySelectorAll('.fc-flap').forEach(f => { f.getAnimations().forEach(a => a.cancel()); f.remove(); });
   const old = card.dataset.v;
-  if (old === v) return;
-  card.dataset.v = v;
   const [top, bot] = card.querySelectorAll('.fc-half span');
-  if (!animate || old == null || reducedMotion.matches){ top.textContent = bot.textContent = v; return; }
+  if (old === v){ top.textContent = bot.textContent = v; return; }   // also repairs an interrupted flip
+  card.dataset.v = v;
+  if (!animate || old == null || reducedMotion.matches || document.hidden){ top.textContent = bot.textContent = v; return; }
+  bot.textContent = old;                              // a cut-short flip may never have updated it
   const flap = (cls, txt) => { const d = document.createElement('div'); d.className = 'fc-flap ' + cls; d.innerHTML = `<span>${txt}</span>`; return d; };
   top.textContent = v;                                // the new top waits under the falling flap
   const ft = flap('fc-flap-top', old), fb = flap('fc-flap-bot', v);

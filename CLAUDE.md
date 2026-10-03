@@ -32,7 +32,7 @@ features, scoring, and folder layout. This file is the rules for changing it saf
 - Charts: validated categorical colours only (see `FIN_COLORS`); no dual axes.
 
 ## Code gotchas
-- `DB` is keyed by `YYYY-MM-DD` day entries plus reserved keys `_finance`, `_deposits`, `_deadlines` and `_notes`.
+- `DB` is keyed by `YYYY-MM-DD` day entries plus reserved keys `_finance`, `_deposits`, `_deadlines`, `_notes` and `_mindmaps`.
   Anything that walks `Object.keys(DB)` must skip non-day keys with `isDayKey(k)`.
 - `e.water` is millilitres (converted from 700 ml bottles on 14 Sep 2026).
 - Per-day max score comes from that day's scored parts, not the global `MAX_POINTS`.

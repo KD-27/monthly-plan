@@ -996,6 +996,95 @@ body.cal-view .app{ width:max-content; max-width:100%; }
 #fzRing{ transition:stroke-dashoffset .9s linear; }
 .focus[data-state="setup"] #fzRing{ transition:none; }
 
+/* ============================================================
+   MIND MAPS — lower half of the right rail, and the map window
+   ============================================================ */
+.rail-sec{ flex:1 1 0; min-height:0; display:flex; flex-direction:column; }
+.rail-sec + .rail-sec{ border-top:1px solid #EADCA6; }
+.rail-sec + .rail-sec .dl-rail-head{ padding-top:16px; }
+.mm-card{ padding:10px 12px; border-radius:12px; background:rgba(255,253,246,.78); border:1px solid #EEDFAA;
+  box-shadow:0 1px 2px rgba(120,100,40,.06); cursor:pointer; animation:itemIn .4s var(--ease-out) both; transition:background .2s; }
+.mm-card:hover{ background:#FFFDF7; }
+.mm-card-t{ font-size:13px; font-weight:600; line-height:1.3; color:var(--ink); overflow-wrap:anywhere; }
+.dl-map{ display:inline-block; margin-top:6px; padding:2px 9px; border-radius:99px; font-size:11px; font-weight:650;
+  color:#6E5E22; background:#F3E4A8; border:1px solid #E2CF85; transition:background .2s; }
+.dl-map:hover{ background:#EEDB93; }
+
+#mmScrim{ z-index:58; }
+.mm{ position:fixed; inset:3.5vh 3.5vw; z-index:60; display:flex; flex-direction:column; overflow:hidden; border-radius:var(--r-xl);
+  background:var(--surface); border:1px solid var(--line); box-shadow:var(--shadow-lg);
+  opacity:0; transform:scale(.97) translateY(8px); pointer-events:none; transition:opacity .3s var(--ease), transform .35s var(--ease-out); }
+.mm.on{ opacity:1; transform:none; pointer-events:auto; }
+.mm-bar{ display:flex; align-items:center; gap:12px; padding:13px 18px; border-bottom:1px solid var(--line);
+  background:linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%); }
+.mm-ttl{ min-width:0; margin-right:auto; }
+.mm-kick{ font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--good); }
+.mm-kick em{ font-style:normal; font-weight:600; letter-spacing:.02em; text-transform:none; color:var(--ink-3); margin-left:8px; }
+.mm-ttl h2{ margin:1px 0 0; font-size:18px; font-weight:650; letter-spacing:-.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mm-link{ display:flex; align-items:center; gap:6px; font-size:12px; color:var(--ink-3); }
+.mm-link select{ max-width:250px; padding:6px 10px; border-radius:99px; border:1px solid var(--line-2); background:var(--surface);
+  font:inherit; font-size:12.5px; color:var(--ink-2); }
+.mm-modes{ display:flex; gap:2px; padding:3px; background:var(--surface-2); border:1px solid var(--line); border-radius:99px; }
+.mm-modes button{ padding:5px 15px; border-radius:99px; font-size:12.5px; font-weight:600; color:var(--ink-2); transition:background .2s, color .2s; }
+.mm[data-mode="view"] .mm-modes [data-mode="view"], .mm[data-mode="edit"] .mm-modes [data-mode="edit"]{ background:var(--surface); box-shadow:var(--shadow-sm); color:var(--ink); }
+.mm-del{ padding:6px 12px; border-radius:99px; font-size:12.5px; font-weight:600; color:#9E5544; transition:background .2s; }
+.mm-del:hover, .mm-del.arm{ background:var(--bad-soft); }
+
+.mm-stage{ position:relative; flex:1; min-height:0; overflow:hidden; cursor:grab; touch-action:none;
+  background:radial-gradient(circle, rgba(74,65,55,.11) 1px, transparent 1.3px) 0 0 / 22px 22px, var(--surface); }
+.mm-stage.panning{ cursor:grabbing; }
+.mm-canvas{ position:absolute; left:0; top:0; transform-origin:0 0; }
+.mm-lines{ position:absolute; left:0; top:0; width:1px; height:1px; overflow:visible; }
+.mm-lines path{ fill:none; transition:d .24s var(--ease), opacity .35s; }
+.mm-lines path.dim{ opacity:.3; }
+.mm-help{ position:absolute; left:18px; bottom:14px; font-size:11.5px; color:var(--ink-3); pointer-events:none; }
+/* width from its own text (max-content), not from the zero-width canvas — else boxes further
+   right get less room and collapse to one letter per line */
+.mm-node{ position:absolute; display:flex; align-items:center; gap:7px; width:max-content; max-width:230px; padding:7px 12px; border-radius:10px;
+  background:var(--f); border:1.5px solid var(--s); font-size:13px; line-height:1.35; color:var(--ink); cursor:default;
+  box-shadow:0 1px 2px rgba(74,65,55,.08); transition:left .24s var(--ease), top .24s var(--ease), opacity .35s, box-shadow .2s; }
+.mm-node.root{ padding:12px 24px; border-radius:999px; font-size:15px; font-weight:650; background:#E4EEF4; border:2px solid #7FA3B5; --s:#7FA3B5; }
+.mm-node.l1{ font-weight:600; }
+.mm-node.deep{ background:color-mix(in srgb, var(--f) 55%, #FFFDF8); font-size:12.5px; }
+.mm-node.done, .mm-node.dim{ opacity:.42; }
+.mm-node.done .mm-txt{ text-decoration:line-through; }
+.mm-nomotion .mm-node, .mm-nomotion path{ transition:none !important; }
+.mm-txt{ min-width:1ch; outline:none; overflow-wrap:anywhere; white-space:pre-wrap; }
+.mm-txt:empty::before{ content:attr(data-ph); color:rgba(74,65,55,.4); }
+.mm[data-mode="edit"] .mm-txt{ cursor:text; }
+.mm[data-mode="edit"] .mm-node:focus-within{ box-shadow:0 0 0 3px color-mix(in srgb, var(--s) 35%, transparent); }
+.mm-chk{ flex:none; width:16px; height:16px; border-radius:50%; border:1.6px solid var(--s); background:#FFFDF8;
+  display:grid; place-items:center; font-size:9px; font-weight:800; color:#fff; transition:background .2s, transform .2s var(--spring); }
+.mm-chk:hover{ transform:scale(1.12); }
+.done .mm-chk{ background:var(--s); }
+.done .mm-chk::after{ content:'✓'; }
+.mm-add, .mm-x{ position:absolute; z-index:3; display:none; place-items:center; border-radius:50%; line-height:1; }
+.mm-add{ bottom:-10px; right:-10px; width:20px; height:20px; background:var(--s); color:#fff; font-size:15px; font-weight:700; }
+.mm-node.sl .mm-add{ right:auto; left:-10px; }
+.mm-x{ top:-8px; right:-8px; width:18px; height:18px; background:var(--surface); border:1px solid var(--line-2); color:#9E5544; font-size:12px; }
+.mm-x.arm{ background:var(--bad); border-color:var(--bad); color:#fff; }
+.mm[data-mode="edit"] .mm-node:hover > :is(.mm-add, .mm-x),
+.mm[data-mode="edit"] .mm-node:focus-within > :is(.mm-add, .mm-x){ display:grid; }
+/* the knob where a branch's lines start: fold it away, or open it back up */
+.mm-fold{ position:absolute; z-index:2; top:50%; right:-10px; min-width:18px; height:18px; margin-top:-9px; padding:0 4px; border-radius:99px;
+  display:grid; place-items:center; background:var(--surface); border:1.5px solid var(--s); color:var(--s); font-size:10.5px; font-weight:800; line-height:1;
+  transition:transform .2s var(--spring), background .2s; }
+.mm-fold:hover{ transform:scale(1.15); }
+.mm-node.sl .mm-fold{ right:auto; left:-10px; }
+.mm-node:has(> .mm-fold){ padding-right:20px; }              /* room for the knob on the side its lines leave from */
+.mm-node.sl:has(> .mm-fold){ padding-right:12px; padding-left:20px; }
+.mm-node.folded .mm-fold{ background:var(--s); color:#fff; }
+.mm-due{ flex:none; padding:1px 7px; border-radius:99px; font-size:10.5px; font-weight:700; font-style:normal;
+  color:var(--ink-3); background:rgba(255,255,255,.7); border:1px solid rgba(74,65,55,.12); }
+.mm-due.soon{ color:#A07A2C; background:#FBF1D9; border-color:#EAD49B; }
+.mm-due.over{ color:#A6503F; background:#FBE6E0; border-color:#EBC2B6; }
+/* moving a box: it follows the pointer; the target shows where it will land */
+.mm[data-mode="edit"] .mm-node:not(.root){ cursor:grab; }
+.mm-node.dragging{ z-index:6; opacity:.92; box-shadow:var(--shadow-lg); pointer-events:none; transition:none; cursor:grabbing; }
+.mm-node.drop-in{ box-shadow:0 0 0 3px var(--s); }
+.mm-node.drop-before{ box-shadow:0 -4px 0 -1px var(--s); }
+.mm-node.drop-after{ box-shadow:0 4px 0 -1px var(--s); }
+
 .toast{ position:fixed; left:50%; bottom:26px; transform:translate(-50%,16px); z-index:70; background:var(--ink); color:#F7F2E8; font-size:13px; padding:10px 16px; border-radius:99px; box-shadow:var(--shadow-lg); opacity:0; pointer-events:none; transition:opacity .3s var(--ease), transform .34s var(--ease-out); }
 .toast.on{ opacity:1; transform:translate(-50%,0); }
 
@@ -1095,7 +1184,8 @@ body.cal-view .app{ width:max-content; max-width:100%; }
   <div class="sn-list" id="snList"></div>
 </aside>
 
-<aside class="dl-rail" id="dlRail" aria-label="Open deadlines">
+<aside class="dl-rail" id="dlRail" aria-label="Open deadlines and mind maps">
+  <section class="rail-sec">
   <div class="dl-rail-head">
     <span class="dl-rail-ttl">Deadlines</span><span class="dl-count" id="dlCount"></span>
     <button class="dl-icon" id="dlOpen" type="button" title="Add a deadline · see completed and cancelled"
@@ -1104,7 +1194,35 @@ body.cal-view .app{ width:max-content; max-width:100%; }
     </button>
   </div>
   <div class="dl-rail-list" id="dlRailList"></div>
+  </section>
+  <section class="rail-sec">
+    <div class="dl-rail-head">
+      <span class="dl-rail-ttl">Mind maps</span><span class="dl-count" id="mmCount"></span>
+      <button class="dl-icon" id="mmNew" type="button" title="New mind map" aria-label="New mind map">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+    </div>
+    <div class="dl-rail-list" id="mmList"></div>
+  </section>
 </aside>
+
+<div class="scrim" id="mmScrim"></div>
+<div class="mm" id="mm" data-mode="view" role="dialog" aria-modal="true" aria-label="Mind map">
+  <div class="mm-bar">
+    <div class="mm-ttl"><div class="mm-kick">Mind map</div><h2 id="mmTitle"></h2></div>
+    <label class="mm-link">Deadline <select id="mmDeadline" aria-label="Linked deadline"></select></label>
+    <div class="mm-modes" role="tablist"><button type="button" data-mode="view">View</button><button type="button" data-mode="edit">Edit</button></div>
+    <button class="ghost" id="mmFit" type="button" title="Fit the whole map in view">Fit</button>
+    <button class="mm-del" id="mmDel" type="button">Delete map</button>
+    <button class="x-btn" id="mmClose" type="button" aria-label="Close">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div class="mm-stage" id="mmStage">
+    <div class="mm-canvas" id="mmCanvas"><svg class="mm-lines" id="mmLines"></svg><div id="mmNodes"></div></div>
+    <div class="mm-help" id="mmHelp"></div>
+  </div>
+</div>
 
 <div class="scrim" id="scrim"></div>
 <div class="scrim" id="infoScrim"></div>
@@ -3426,7 +3544,7 @@ function renderDlRail(){
       <div class="dl-card ${w.cls}" data-id="${d.id}" style="animation-delay:${i*30}ms" title="Click to edit">
         <button class="dl-tick" type="button" data-act="done" title="Mark completed" aria-label="Mark “${escHtml(d.title)}” completed"></button>
         <div class="dl-txt"><div class="dl-t">${escHtml(d.title)}</div>
-          <div class="dl-when">${w.date} · <b>${w.rel}</b></div>${dlNote(d)}</div>
+          <div class="dl-when">${w.date} · <b>${w.rel}</b></div>${dlNote(d)}${mmChip(d.id)}</div>
       </div>`; }).join('')
     : `<div class="dl-empty">No open deadlines.<br>Tap <b>+</b> to add one.</div>`;
 }
@@ -3478,6 +3596,7 @@ function dlManagerHTML(root){
 /** Redraw every place deadlines show: the rail, and the drawer if open. */
 function renderDeadlines(){
   renderDlRail();
+  renderMindmaps();
   if (dlPanel.classList.contains('on')) dlPanelBody.innerHTML = dlManagerHTML(dlPanelBody);
 }
 
@@ -3539,6 +3658,8 @@ wireDlManager(dlPanelBody);
 
 // the rail: tick to complete, click anywhere else on a card to edit it
 document.getElementById('dlRailList').addEventListener('click', e=>{
+  const chip = e.target.closest('.dl-map');
+  if (chip){ openMindmap(chip.dataset.map, 'view'); return; }
   const card = e.target.closest('.dl-card'); if (!card) return;
   if (e.target.closest('[data-act="done"]')) dlSetStatus(card.dataset.id, 'done', card);
   else openDeadlines(card.dataset.id);
@@ -3562,6 +3683,386 @@ document.getElementById('dlOpen').addEventListener('click', ()=> openDeadlines()
 document.getElementById('dlClose').addEventListener('click', closeDeadlines);
 dlScrim.addEventListener('click', closeDeadlines);
 document.addEventListener('keydown', e=>{ if (e.key === 'Escape' && dlPanel.classList.contains('on')) closeDeadlines(); });
+
+/* ============================================================
+   MIND MAPS — describe a task as a map, tick off its leaves
+   ============================================================ */
+/* [{ id, root:{ id, text, done?, collapsed?, children:[…] }, deadline?, updated }]
+   under a reserved key. The root's text is the map's title. Leaves (no children)
+   carry a tick; a ticked leaf fades, and a branch fades once every leaf under it is
+   ticked. Only the centre carries a date: the linked deadline's. Saved while it exists; deleting a map
+   removes it for good. Layout is automatic: branches alternate right then left of
+   the root, each subtree stacked in its own band; folded branches take one row. */
+const MM_KEY = '_mindmaps';
+const mmAll   = () => Array.isArray(DB[MM_KEY]) ? DB[MM_KEY] : [];
+const mmWrite = () => Array.isArray(DB[MM_KEY]) ? DB[MM_KEY] : (DB[MM_KEY] = []);
+const mmFind  = id => mmAll().find(m => m.id === id);
+const mmUid   = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const MM_COLORS = [                                   // soft fills, stronger strokes — one per main branch
+  { f:'#DDEFE9', s:'#5FA894' }, { f:'#E7E4F5', s:'#8A80C4' }, { f:'#F8E7D1', s:'#CF9A50' },
+  { f:'#E4EED9', s:'#7FA35F' }, { f:'#F6E0DB', s:'#C77F72' }, { f:'#DDE9F2', s:'#6E98BC' },
+];
+const mmEl = document.getElementById('mm'), mmScrim = document.getElementById('mmScrim');
+const mmStage = document.getElementById('mmStage'), mmCanvas = document.getElementById('mmCanvas');
+const mmNodes = document.getElementById('mmNodes'), mmLines = document.getElementById('mmLines');
+const MM = { map:null, mode:'view', z:1, tx:0, ty:0, pos:{}, sizes:{}, saveT:null, hist:[], fut:[], typing:false, typeT:null };
+
+const mmIsLeaf = n => !n.children || !n.children.length;
+const mmKids   = n => n.collapsed ? [] : (n.children || []);          // what the layout shows
+function mmStats(n){
+  if (mmIsLeaf(n)) return { t:1, d: n.done ? 1 : 0 };
+  return n.children.reduce((a, c) => { const s = mmStats(c); a.t += s.t; a.d += s.d; return a; }, { t:0, d:0 });
+}
+const mmCount = n => (n.children || []).reduce((a, c) => a + 1 + mmCount(c), 0);
+const mmHas = (n, id) => (n.children || []).some(c => c.id === id || mmHas(c, id));
+/** Visit every node: f(node, parent, depth, branchIndex). `shown` skips what's folded away. */
+function mmWalk(n, f, parent = null, depth = 0, branch = -1, shown = false){
+  f(n, parent, depth, branch);
+  (shown && depth ? mmKids(n) : (n.children || [])).forEach((c, i) => mmWalk(c, f, n, depth + 1, depth === 0 ? i : branch, shown));
+}
+function mmLocate(id, root = MM.map.root){ let hit = null; mmWalk(root, (n, p) => { if (n.id === id) hit = { n, p }; }); return hit; }
+/** Only the centre shows a date: the linked deadline's. */
+function mmCentreDue(){
+  const d = MM.map && MM.map.deadline && dlFind(MM.map.deadline); if (!d) return null;
+  const n = dayDiff(dateOfKey(d.due), today());
+  return { key: d.due, cls: n < 0 ? 'over' : n <= 3 ? 'soon' : '' };
+}
+
+/* ---- undo / redo: a snapshot before every change in the map window ---- */
+const mmState = () => JSON.stringify({ root: MM.map.root, deadline: MM.map.deadline || null });
+function mmSnap(){ MM.hist.push(mmState()); if (MM.hist.length > 100) MM.hist.shift(); MM.fut.length = 0; }
+function mmRestore(from, to){
+  if (!from.length) return false;
+  to.push(mmState());
+  const st = JSON.parse(from.pop());
+  MM.map.root = st.root;
+  if (st.deadline) MM.map.deadline = st.deadline; else delete MM.map.deadline;
+  mmSave(); mmDeadlineOptions(); mmRender();
+  return true;
+}
+
+/* ---- rail: the list of maps (with the next few ticks), and the chip on a linked deadline ---- */
+function mmChip(deadlineId){
+  const m = mmAll().find(x => x.deadline === deadlineId); if (!m) return '';
+  return `<button class="dl-map" type="button" data-map="${m.id}" title="Open the linked mind map">◈ Map</button>`;
+}
+function renderMindmaps(){
+  const maps = mmAll();
+  document.getElementById('mmCount').textContent = maps.length || '';
+  document.getElementById('mmList').innerHTML = maps.length ? maps.map((m, i) =>
+    `<div class="mm-card" data-map="${m.id}" style="animation-delay:${i*30}ms" title="Open">
+      <div class="mm-card-t">${escHtml(m.root.text || 'Untitled map')}</div></div>`).join('')
+    : `<div class="dl-empty">No mind maps yet.<br>Tap <b>+</b> to map out a task.</div>`;
+}
+document.getElementById('mmList').addEventListener('click', e=>{
+  const card = e.target.closest('.mm-card'); if (card) openMindmap(card.dataset.map, 'view');
+});
+
+/* ---- drawing ---- */
+function mmRender(focusId){
+  const m = MM.map, edit = MM.mode === 'edit', prev = MM.pos;
+  mmEl.dataset.mode = MM.mode;
+  document.getElementById('mmTitle').textContent = m.root.text || 'Untitled map';
+  document.getElementById('mmHelp').textContent = edit
+    ? 'Enter: sibling · Tab: child · drag a box onto another to move it · Backspace on an empty box: remove · Ctrl+Z: undo · scroll to zoom'
+    : 'Tick the last boxes as you finish them · click a knob to fold a branch · drag the background to move · Ctrl+Z: undo';
+  const fresh = !Object.keys(prev).length;
+  mmEl.classList.toggle('mm-nomotion', fresh);
+  const due = mmCentreDue();
+  let html = '';
+  mmWalk(m.root, (n, p, depth, branch)=>{
+    const c = depth ? MM_COLORS[branch % MM_COLORS.length] : null;
+    const leaf = depth > 0 && mmIsLeaf(n), st = depth > 0 && !leaf ? mmStats(n) : null;
+    const was = prev[n.id] || (p && prev[p.id]) || { x:0, y:0 }, sz = MM.sizes[n.id] || { w:0, h:0 };
+    const folded = depth > 0 && !leaf && n.collapsed;
+    const cls = [depth === 0 ? 'root' : depth === 1 ? 'l1' : 'deep', leaf ? 'leaf' : '', leaf && n.done ? 'done' : '',
+                 st && st.d === st.t ? 'dim' : '', folded ? 'folded' : '', was.side < 0 ? 'sl' : ''].join(' ');
+    html += `<div class="mm-node ${cls}" data-id="${n.id}" style="left:${was.x - sz.w / 2}px;top:${was.y - sz.h / 2}px${c ? `;--f:${c.f};--s:${c.s}` : ''}">
+      ${leaf ? `<button class="mm-chk" type="button" data-act="chk" aria-label="Mark done"></button>` : ''}
+      <span class="mm-txt" data-ph="${depth ? 'Type…' : 'Map title'}"${edit ? ' contenteditable="plaintext-only"' : ''} spellcheck="${edit}">${escHtml(n.text || '')}</span>
+      ${!depth && due ? `<em class="mm-due ${due.cls}">${dlShort(due.key)}</em>` : ''}
+      ${depth && !leaf ? `<button class="mm-fold" type="button" data-act="fold" title="${n.collapsed ? 'Unfold this branch' : 'Fold this branch away'}">${n.collapsed ? '+' + mmCount(n) : '−'}</button>` : ''}
+      ${edit ? `<button class="mm-add" type="button" data-act="add" title="Add a box under this one (Tab)">+</button>` : ''}
+      ${edit && depth ? `<button class="mm-x" type="button" data-act="del" title="Delete">×</button>` : ''}
+    </div>`;
+  }, null, 0, -1, true);
+  mmNodes.innerHTML = html;
+  mmReflow();
+  if (fresh) requestAnimationFrame(()=> requestAnimationFrame(()=> mmEl.classList.remove('mm-nomotion')));
+  if (focusId) mmFocus(focusId);
+}
+function mmFocus(id, x, y){
+  const t = mmNodes.querySelector(`[data-id="${id}"] .mm-txt`); if (!t) return;
+  t.focus();
+  let r = x != null && document.caretRangeFromPoint ? document.caretRangeFromPoint(x, y) : null;
+  if (!r || !t.contains(r.startContainer)){ r = document.createRange(); r.selectNodeContents(t); r.collapse(false); }
+  const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+}
+/** Measure every box, lay the tree out, move the boxes and redraw the connectors. */
+function mmReflow(){
+  const m = MM.map, sizes = {}, H = {}, pos = {}, VG = 12, HG = 48;
+  mmNodes.querySelectorAll('.mm-node').forEach(el => { sizes[el.dataset.id] = { w: el.offsetWidth, h: el.offsetHeight, el }; });
+  const band = n => H[n.id] ?? (H[n.id] = !mmKids(n).length ? sizes[n.id].h
+    : Math.max(sizes[n.id].h, mmKids(n).reduce((a, c) => a + band(c), 0) + VG * (mmKids(n).length - 1)));
+  const place = (n, side, x0, top)=>{
+    const sz = sizes[n.id], x = x0 + side * (HG + sz.w / 2), y = top + band(n) / 2;
+    pos[n.id] = { x, y, side };
+    const kids = mmKids(n); if (!kids.length) return;
+    let cy = y - (kids.reduce((a, c) => a + band(c), 0) + VG * (kids.length - 1)) / 2;
+    kids.forEach(c => { place(c, side, x + side * sz.w / 2, cy); cy += band(c) + VG; });
+  };
+  pos[m.root.id] = { x:0, y:0, side:0 };
+  const kids = m.root.children || [], nr = Math.ceil(kids.length / 2), rw = sizes[m.root.id].w;
+  [[kids.slice(0, nr), 1], [kids.slice(nr), -1]].forEach(([list, side])=>{
+    let y = -(list.reduce((a, c) => a + band(c), 0) + VG * Math.max(0, list.length - 1)) / 2;
+    list.forEach(c => { place(c, side, side * rw / 2, y); y += band(c) + VG; });
+  });
+  Object.entries(sizes).forEach(([id, sz])=>{
+    const p = pos[id]; sz.el.style.left = `${p.x - sz.w / 2}px`; sz.el.style.top = `${p.y - sz.h / 2}px`;
+    sz.el.classList.toggle('sl', p.side < 0);
+  });
+  // connectors: one path per shown child, kept across redraws so they glide with the boxes
+  const keep = new Set();
+  mmWalk(m.root, (n, par, depth, branch)=>{
+    if (!par) return;
+    const a = pos[par.id], b = pos[n.id], side = b.side;
+    const x1 = a.x + side * sizes[par.id].w / 2, x2 = b.x - side * sizes[n.id].w / 2, mx = (x1 + x2) / 2;
+    let path = mmLines.querySelector(`[data-id="${n.id}"]`);
+    if (!path){ path = document.createElementNS('http://www.w3.org/2000/svg', 'path'); path.dataset.id = n.id; mmLines.appendChild(path); }
+    path.style.d = `path("M${x1} ${a.y} C${mx} ${a.y} ${mx} ${b.y} ${x2} ${b.y}")`;
+    path.setAttribute('stroke', MM_COLORS[branch % MM_COLORS.length].s);
+    path.setAttribute('stroke-width', depth === 1 ? 2.2 : 1.6);
+    const st = mmStats(n);
+    path.classList.toggle('dim', st.t > 0 && st.d === st.t);
+    keep.add(n.id);
+  }, null, 0, -1, true);
+  mmLines.querySelectorAll('path').forEach(el => { if (!keep.has(el.dataset.id)) el.remove(); });
+  MM.pos = pos; MM.sizes = sizes;
+}
+
+/* ---- moving around: drag the background to pan, scroll to zoom, Fit to frame it ---- */
+const mmApply = () => { mmCanvas.style.transform = `translate(${MM.tx}px,${MM.ty}px) scale(${MM.z})`; };
+function mmFit(){
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  Object.entries(MM.pos).forEach(([id, p])=>{ const sz = MM.sizes[id];
+    x0 = Math.min(x0, p.x - sz.w / 2); x1 = Math.max(x1, p.x + sz.w / 2); y0 = Math.min(y0, p.y - sz.h / 2); y1 = Math.max(y1, p.y + sz.h / 2); });
+  const W = mmStage.clientWidth, Hh = mmStage.clientHeight;
+  MM.z = Math.max(0.35, Math.min(1.3, (W - 120) / (x1 - x0 || 1), (Hh - 110) / (y1 - y0 || 1)));
+  MM.tx = W / 2 - MM.z * (x0 + x1) / 2; MM.ty = Hh / 2 - MM.z * (y0 + y1) / 2;
+  mmApply();
+}
+let mmPan = null;
+mmStage.addEventListener('pointerdown', e=>{
+  if (e.target.closest('.mm-node') || e.button !== 0) return;
+  mmPan = { x: e.clientX, y: e.clientY, tx: MM.tx, ty: MM.ty };
+  mmStage.setPointerCapture(e.pointerId); mmStage.classList.add('panning');
+  if (document.activeElement && mmNodes.contains(document.activeElement)) document.activeElement.blur();
+});
+mmStage.addEventListener('pointermove', e=>{
+  if (!mmPan) return;
+  MM.tx = mmPan.tx + e.clientX - mmPan.x; MM.ty = mmPan.ty + e.clientY - mmPan.y; mmApply();
+});
+mmStage.addEventListener('pointerup', ()=>{ mmPan = null; mmStage.classList.remove('panning'); });
+mmStage.addEventListener('wheel', e=>{
+  e.preventDefault();
+  const r = mmStage.getBoundingClientRect(), px = e.clientX - r.left, py = e.clientY - r.top;
+  const z = Math.max(0.35, Math.min(2, MM.z * (e.deltaY < 0 ? 1.1 : 1 / 1.1)));
+  MM.tx = px - (px - MM.tx) * z / MM.z; MM.ty = py - (py - MM.ty) * z / MM.z; MM.z = z; mmApply();
+}, { passive:false });
+document.getElementById('mmFit').addEventListener('click', mmFit);
+
+/* ---- editing ---- */
+function mmSave(){ MM.map.updated = nowStamp(); save(); }
+function mmAdd(parentId){
+  mmSnap();
+  const hit = mmLocate(parentId), node = { id: mmUid(), text:'', children:[] };
+  (hit.n.children = hit.n.children || []).push(node);
+  delete hit.n.done; delete hit.n.collapsed;            // a leaf that grows children is an open branch now
+  mmSave(); mmRender(node.id);
+}
+function mmAddSibling(id){
+  const hit = mmLocate(id);
+  if (!hit.p) return mmAdd(id);
+  mmSnap();
+  const node = { id: mmUid(), text:'', children:[] };
+  hit.p.children.splice(hit.p.children.indexOf(hit.n) + 1, 0, node);
+  mmSave(); mmRender(node.id);
+}
+function mmRemove(id, focusAfter){
+  const hit = mmLocate(id); if (!hit || !hit.p) return;
+  mmSnap();
+  const i = hit.p.children.indexOf(hit.n);
+  hit.p.children.splice(i, 1);
+  mmSave();
+  mmRender(focusAfter ? (hit.p.children[i - 1] || hit.p).id : null);
+}
+mmNodes.addEventListener('click', e=>{
+  const btn = e.target.closest('[data-act]'); if (!btn) return;
+  const id = btn.closest('.mm-node').dataset.id, hit = mmLocate(id);
+  const act = btn.dataset.act;
+  if (act === 'chk'){ mmSnap(); hit.n.done = !hit.n.done; if (!hit.n.done) delete hit.n.done; mmSave(); mmRender(); }
+  else if (act === 'fold'){ hit.n.collapsed = !hit.n.collapsed; if (!hit.n.collapsed) delete hit.n.collapsed; mmSave(); mmRender(); }
+  else if (act === 'add') mmAdd(id);
+  else if (act === 'del'){
+    if (!mmIsLeaf(hit.n) && !btn.classList.contains('arm')){      // a whole branch takes a second click
+      btn.classList.add('arm'); btn.title = 'Click again to delete this branch';
+      setTimeout(()=> btn.classList.remove('arm'), 2500);
+      return;
+    }
+    mmRemove(id);
+  }
+});
+mmNodes.addEventListener('mousedown', e=>{ if (e.target.closest('[data-act]')) e.preventDefault(); });   // keep the caret where it is
+mmNodes.addEventListener('input', e=>{
+  const t = e.target.closest('.mm-txt'); if (!t) return;
+  if (!MM.typing){ mmSnap(); MM.typing = true; }                  // one undo step per burst of typing
+  clearTimeout(MM.typeT); MM.typeT = setTimeout(()=>{ MM.typing = false; }, 1200);
+  const hit = mmLocate(t.closest('.mm-node').dataset.id);
+  hit.n.text = t.textContent;
+  if (!hit.p) document.getElementById('mmTitle').textContent = hit.n.text || 'Untitled map';
+  mmReflow();
+  clearTimeout(MM.saveT); MM.saveT = setTimeout(mmSave, 400);
+});
+mmNodes.addEventListener('focusout', ()=>{ MM.typing = false; });
+mmNodes.addEventListener('keydown', e=>{
+  const t = e.target.closest('.mm-txt'); if (!t || MM.mode !== 'edit') return;
+  const id = t.closest('.mm-node').dataset.id, hit = mmLocate(id);
+  if (e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); clearTimeout(MM.saveT); mmAddSibling(id); }
+  else if (e.key === 'Tab' && !e.shiftKey){ e.preventDefault(); clearTimeout(MM.saveT); mmAdd(id); }
+  else if (e.key === 'Backspace' && !t.textContent && hit.p && mmIsLeaf(hit.n)){ e.preventDefault(); mmRemove(id, true); }
+});
+
+/* ---- moving a box: drag it onto another (middle = under it, top/bottom edge = before/after it) ---- */
+let mmDrag = null;
+mmNodes.addEventListener('pointerdown', e=>{
+  if (MM.mode !== 'edit' || e.button !== 0 || e.target.closest('[data-act]')) return;
+  const el = e.target.closest('.mm-node'); if (!el || el.classList.contains('root')) return;
+  const txt = e.target.closest('.mm-txt');
+  if (txt && document.activeElement === txt) return;              // already typing here: let the caret and selection work
+  e.preventDefault();                                             // no text selection while dragging; a plain click focuses below
+  mmDrag = { id: el.dataset.id, el, x: e.clientX, y: e.clientY, moved: false, target: null, where: null };
+  el.setPointerCapture(e.pointerId);
+});
+mmNodes.addEventListener('pointermove', e=>{
+  const d = mmDrag; if (!d) return;
+  const dx = e.clientX - d.x, dy = e.clientY - d.y;
+  if (!d.moved){
+    if (Math.hypot(dx, dy) < 6) return;
+    d.moved = true; d.el.classList.add('dragging');
+    if (document.activeElement && mmNodes.contains(document.activeElement)) document.activeElement.blur();
+  }
+  d.el.style.transform = `translate(${dx / MM.z}px, ${dy / MM.z}px)`;
+  if (d.target) d.target.classList.remove('drop-in', 'drop-before', 'drop-after');
+  d.target = null; d.where = null;
+  const under = document.elementFromPoint(e.clientX, e.clientY);
+  const tel = under && under.closest && under.closest('.mm-node');
+  if (!tel || tel === d.el) return;
+  const moving = mmLocate(d.id).n;
+  if (mmHas(moving, tel.dataset.id)) return;                      // never into its own branch
+  const r = tel.getBoundingClientRect(), f = (e.clientY - r.top) / r.height;
+  d.where = tel.classList.contains('root') ? 'in' : f < 0.28 ? 'before' : f > 0.72 ? 'after' : 'in';
+  d.target = tel; tel.classList.add('drop-' + d.where);
+});
+function mmDrop(e){
+  const d = mmDrag; if (!d) return;
+  mmDrag = null;
+  if (!d.moved){ mmFocus(d.id, e.clientX, e.clientY); return; }   // it was a click: start typing where it landed
+  d.el.classList.remove('dragging'); d.el.style.transform = '';
+  if (d.target) d.target.classList.remove('drop-in', 'drop-before', 'drop-after');
+  if (!d.target) return;
+  const from = mmLocate(d.id), to = mmLocate(d.target.dataset.id);
+  if (!from || !to || from.n === to.n) return;
+  mmSnap();
+  from.p.children.splice(from.p.children.indexOf(from.n), 1);
+  if (d.where === 'in'){
+    (to.n.children = to.n.children || []).push(from.n);
+    delete to.n.done; delete to.n.collapsed;
+  } else {
+    const at = to.p.children.indexOf(to.n);
+    to.p.children.splice(d.where === 'before' ? at : at + 1, 0, from.n);
+  }
+  mmSave(); mmRender();
+}
+mmNodes.addEventListener('pointerup', mmDrop);
+mmNodes.addEventListener('pointercancel', ()=>{ if (mmDrag){ mmDrag.el.classList.remove('dragging'); mmDrag.el.style.transform = ''; mmDrag = null; mmRender(); } });
+
+document.querySelectorAll('.mm-modes button').forEach(b => b.addEventListener('click', ()=>{
+  MM.mode = b.dataset.mode; mmRender(MM.mode === 'edit' && !MM.map.root.text ? MM.map.root.id : null);
+}));
+
+/* ---- the linked deadline ---- */
+function mmDeadlineOptions(){
+  const sel = document.getElementById('mmDeadline'), cur = MM.map.deadline;
+  const list = dlAll().filter(d => d.status === 'open' || d.id === cur).sort(byDue);
+  sel.innerHTML = `<option value="">None</option>` + list.map(d =>
+    `<option value="${d.id}"${d.id === cur ? ' selected' : ''}>${escHtml(d.title)} · ${dlShort(d.due)}</option>`).join('');
+}
+document.getElementById('mmDeadline').addEventListener('change', e=>{
+  mmSnap();
+  const v = e.target.value;
+  if (v){
+    mmAll().forEach(m => { if (m !== MM.map && m.deadline === v) delete m.deadline; });   // one map per deadline
+    MM.map.deadline = v;
+    const d = dlFind(v); if (d) MM.map.root.text = d.title;                              // the deadline becomes the main topic
+  }
+  else delete MM.map.deadline;
+  mmSave(); mmRender(); renderDeadlines();
+});
+
+
+/* ---- opening, closing, deleting ---- */
+function openMindmap(id, mode){
+  MM.map = mmFind(id); if (!MM.map) return;
+  MM.mode = mode || 'view'; MM.pos = {}; MM.sizes = {}; MM.hist = []; MM.fut = [];
+  mmDeadlineOptions();
+  const del = document.getElementById('mmDel'); del.classList.remove('arm'); del.textContent = 'Delete map';
+  mmScrim.classList.add('on'); mmEl.classList.add('on');
+  document.body.style.overflow = 'hidden';
+  mmRender(MM.mode === 'edit' && !MM.map.root.text ? MM.map.root.id : null);
+  mmFit();
+}
+function closeMindmap(){
+  if (!MM.map) return;
+  clearTimeout(MM.saveT);
+  if (document.activeElement && mmEl.contains(document.activeElement)) document.activeElement.blur();
+  // a map closed before anything was written is just discarded
+  if (!MM.map.root.text.trim() && mmIsLeaf(MM.map.root)) DB[MM_KEY] = mmAll().filter(m => m !== MM.map);
+  save();
+  mmScrim.classList.remove('on'); mmEl.classList.remove('on');
+  if (!sheet.classList.contains('on')) document.body.style.overflow = '';
+  MM.map = null;
+  renderDeadlines();
+}
+document.getElementById('mmNew').addEventListener('click', ()=>{
+  const m = { id: mmUid(), root: { id: mmUid(), text:'', children:[] }, updated: nowStamp() };
+  mmWrite().unshift(m);
+  openMindmap(m.id, 'edit');
+});
+document.getElementById('mmClose').addEventListener('click', closeMindmap);
+mmScrim.addEventListener('click', closeMindmap);
+document.getElementById('mmDel').addEventListener('click', e=>{
+  const b = e.currentTarget;
+  if (!b.classList.contains('arm')){ b.classList.add('arm'); b.textContent = 'Tap again to delete'; return; }
+  DB[MM_KEY] = mmAll().filter(m => m !== MM.map);
+  MM.map.root.text = '';                               // already gone — nothing for closeMindmap to keep
+  closeMindmap(); toast('Mind map deleted');
+});
+document.addEventListener('keydown', e=>{
+  if (!mmEl.classList.contains('on')) return;
+  const k = e.key.toLowerCase();
+  if ((e.ctrlKey || e.metaKey) && (k === 'z' || k === 'y')){          // undo / redo for the whole map
+    e.preventDefault(); e.stopImmediatePropagation();
+    clearTimeout(MM.saveT); MM.typing = false;
+    const redo = k === 'y' || e.shiftKey;
+    if (!(redo ? mmRestore(MM.fut, MM.hist) : mmRestore(MM.hist, MM.fut))) toast(redo ? 'Nothing to redo' : 'Nothing to undo');
+    return;
+  }
+  if (e.key !== 'Escape') return;
+  e.stopImmediatePropagation();
+  if (document.activeElement && mmNodes.contains(document.activeElement)) document.activeElement.blur();   // first Escape stops editing
+  else closeMindmap();
+}, true);
+window.addEventListener('resize', ()=>{ if (MM.map) mmFit(); });
 
 /* ============================================================
    DAY SHEET

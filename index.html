@@ -1036,66 +1036,119 @@ body.cal-view .app{ width:max-content; max-width:100%; }
 .mm-link{ display:flex; align-items:center; gap:6px; font-size:12px; color:var(--ink-3); }
 .mm-link select{ max-width:250px; padding:6px 10px; border-radius:99px; border:1px solid var(--line-2); background:var(--surface);
   font:inherit; font-size:12.5px; color:var(--ink-2); }
-.mm-modes{ display:flex; gap:2px; padding:3px; background:var(--surface-2); border:1px solid var(--line); border-radius:99px; }
-.mm-modes button{ padding:5px 15px; border-radius:99px; font-size:12.5px; font-weight:600; color:var(--ink-2); transition:background .2s, color .2s; }
-.mm[data-mode="view"] .mm-modes [data-mode="view"], .mm[data-mode="edit"] .mm-modes [data-mode="edit"]{ background:var(--surface); box-shadow:var(--shadow-sm); color:var(--ink); }
 .mm-del{ padding:6px 12px; border-radius:99px; font-size:12.5px; font-weight:600; color:#9E5544; transition:background .2s; }
 .mm-del:hover, .mm-del.arm{ background:var(--bad-soft); }
 
-.mm-stage{ position:relative; flex:1; min-height:0; overflow:hidden; cursor:grab; touch-action:none;
-  background:radial-gradient(circle, rgba(74,65,55,.11) 1px, transparent 1.3px) 0 0 / 22px 22px, var(--surface); }
+/* ---- the map: one mode, keyed boxes on transforms, tapered branches ----
+   A soft spring derived from --spring (a little overshoot, settles fast). Only
+   transform, opacity and the branches' path `d` animate. */
+.mm{ --mm-spring: linear(0, .0058, .0228 1.5%, .0882 3.2%, .3394 7.4%, .6168 12.1%, .8034 16.3%, .9245 20.4%,
+       .9884 24.1%, 1.0234 28.4%, 1.0353 33%, 1.0306 39.3%, 1.0104 51.6%, .9997 65.4%, 1);
+     --mm-dur: 340ms; }
+.mm-stage{ position:relative; flex:1; min-height:0; overflow:hidden; cursor:grab; touch-action:none; outline:none;
+  background:radial-gradient(circle, rgba(74,65,55,.10) 1px, transparent 1.3px) 0 0 / 22px 22px, var(--surface); }
 .mm-stage.panning{ cursor:grabbing; }
-.mm-canvas{ position:absolute; left:0; top:0; transform-origin:0 0; }
+.mm-canvas{ position:absolute; left:0; top:0; transform-origin:0 0; will-change:transform; }
 .mm-lines{ position:absolute; left:0; top:0; width:1px; height:1px; overflow:visible; }
-.mm-lines path{ fill:none; transition:d .24s var(--ease), opacity .35s; }
+.mm-lines path{ opacity:.9; transition:d var(--mm-dur) var(--mm-spring) var(--ed, 0ms), opacity .35s var(--ease) var(--fd, 0ms); }
 .mm-lines path.dim{ opacity:.3; }
-.mm-help{ position:absolute; left:18px; bottom:14px; font-size:11.5px; color:var(--ink-3); pointer-events:none; }
-/* width from its own text (max-content), not from the zero-width canvas — else boxes further
-   right get less room and collapse to one letter per line */
-.mm-node{ position:absolute; display:flex; align-items:center; gap:7px; width:max-content; max-width:230px; padding:7px 12px; border-radius:10px;
-  background:var(--f); border:1.5px solid var(--s); font-size:13px; line-height:1.35; color:var(--ink); cursor:default;
-  box-shadow:0 1px 2px rgba(74,65,55,.08); transition:left .24s var(--ease), top .24s var(--ease), opacity .35s, box-shadow .2s; }
-.mm-node.root{ padding:12px 24px; border-radius:999px; font-size:15px; font-weight:650; background:#E4EEF4; border:2px solid #7FA3B5; --s:#7FA3B5; }
-.mm-node.l1{ font-weight:600; }
-.mm-node.deep{ background:color-mix(in srgb, var(--f) 55%, #FFFDF8); font-size:12.5px; }
+.mm-lines path.ph{ opacity:.45; }
+#mmNodes{ position:absolute; left:0; top:0; }
+.mm-help{ position:absolute; left:18px; bottom:14px; font-size:11.5px; color:var(--ink-3); pointer-events:none; transition:opacity .2s; }
+
+/* every box: positioned by transform from the layout; width from its own text */
+.mm-node{ position:absolute; left:0; top:0; width:max-content; line-height:1.3; color:var(--ink); cursor:pointer;
+  will-change:transform; user-select:none;
+  transition:transform var(--mm-dur) var(--mm-spring) var(--ed, 0ms), opacity .32s var(--ease) var(--fd, var(--ed, 0ms)),
+             background-color .2s var(--ease), box-shadow .22s var(--ease); }
+.mm-node.mm-enter{ transition:none; }
+.mm-node.mm-ghost{ pointer-events:none; }
+.mm-node.mm-hide{ opacity:0 !important; pointer-events:none; }
+.mm-nomotion .mm-node, .mm-nomotion .mm-lines path, .mm-nomotion .mm-ph, .mm-nomotion .mm-node *{ transition:none !important; animation:none !important; }
+
+/* centre: strongest weight, title on one line where it fits, the deadline chip under it */
+.mm-root{ display:flex; flex-direction:column; align-items:center; gap:5px; max-width:360px; padding:12px 26px 13px; border-radius:999px;
+  --f:var(--water-soft); --s:var(--water); background:var(--water-soft); border:2px solid var(--water);
+  font-size:16px; font-weight:700; letter-spacing:-.01em; text-align:center; box-shadow:var(--shadow-sm); }
+/* main branches: a filled pill in a deeper shade of the branch pastel */
+.mm-main{ display:flex; align-items:center; gap:7px; max-width:250px; padding:7px 15px; border-radius:999px;
+  background:color-mix(in srgb, var(--s) 24%, var(--surface)); color:color-mix(in srgb, var(--s) 38%, var(--ink));
+  font-size:13.5px; font-weight:600; box-shadow:0 1px 2px rgba(74,65,55,.08); }
+/* deeper levels: text resting on the end of its branch line — no box; lighter toward the edge */
+.mm-sub{ display:flex; align-items:center; gap:6px; max-width:230px; padding:2px 5px 5px; border-radius:7px; font-size:13px; }
+.mm-sub.mm-d3{ font-size:12.5px; color:color-mix(in srgb, var(--ink) 74%, var(--surface)); }
+.mm-sub:hover{ background-color:color-mix(in srgb, var(--f) 55%, transparent); }
+/* selection (and keyboard focus): a soft ring in the branch's own colour */
+.mm-node.sel{ box-shadow:0 0 0 2.5px color-mix(in srgb, var(--s) 45%, transparent), 0 2px 10px rgba(74,65,55,.08); }
+.mm-sub.sel{ background-color:color-mix(in srgb, var(--f) 80%, transparent); }
+.mm-node.editing{ cursor:text; box-shadow:0 0 0 2.5px color-mix(in srgb, var(--s) 70%, transparent), 0 2px 10px rgba(74,65,55,.08); }
+.mm-node.lift{ transition:opacity .2s, box-shadow .2s; z-index:10; cursor:grabbing;
+  box-shadow:0 0 0 2.5px color-mix(in srgb, var(--s) 45%, transparent), var(--shadow-lg); }
+.mm-sub.lift{ background-color:var(--surface); }
+
+.mm-txt{ position:relative; min-width:1ch; outline:none; overflow-wrap:anywhere; white-space:pre-wrap; }
+.mm-txt:empty::before{ content:attr(data-ph); opacity:.42; }
+.editing .mm-txt{ user-select:text; }
+/* ticked: the strike draws across left to right, then the box fades */
+.mm-txt::after{ content:''; position:absolute; left:-1px; right:-1px; top:54%; height:1.5px; border-radius:1px; background:currentColor;
+  transform:scaleX(0); transform-origin:0 50%; transition:transform .24s var(--ease); pointer-events:none; }
+.done .mm-txt::after{ transform:scaleX(1); }
 .mm-node.done, .mm-node.dim{ opacity:.42; }
-.mm-node.done .mm-txt{ text-decoration:line-through; }
-.mm-nomotion .mm-node, .mm-nomotion path{ transition:none !important; }
-.mm-txt{ min-width:1ch; outline:none; overflow-wrap:anywhere; white-space:pre-wrap; }
-.mm-txt:empty::before{ content:attr(data-ph); color:rgba(74,65,55,.4); }
-.mm[data-mode="edit"] .mm-txt{ cursor:text; }
-.mm[data-mode="edit"] .mm-node:focus-within{ box-shadow:0 0 0 3px color-mix(in srgb, var(--s) 35%, transparent); }
-.mm-chk{ flex:none; width:16px; height:16px; border-radius:50%; border:1.6px solid var(--s); background:#FFFDF8;
-  display:grid; place-items:center; font-size:9px; font-weight:800; color:#fff; transition:background .2s, transform .2s var(--spring); }
-.mm-chk:hover{ transform:scale(1.12); }
-.done .mm-chk{ background:var(--s); }
-.done .mm-chk::after{ content:'✓'; }
-.mm-add, .mm-x{ position:absolute; z-index:3; display:none; place-items:center; border-radius:50%; line-height:1; }
-.mm-add{ bottom:-10px; right:-10px; width:20px; height:20px; background:var(--s); color:#fff; font-size:15px; font-weight:700; }
-.mm-node.sl .mm-add{ right:auto; left:-10px; }
-.mm-x{ top:-8px; right:-8px; width:18px; height:18px; background:var(--surface); border:1px solid var(--line-2); color:#9E5544; font-size:12px; }
-.mm-x.arm{ background:var(--bad); border-color:var(--bad); color:#fff; }
-.mm[data-mode="edit"] .mm-node:hover > :is(.mm-add, .mm-x),
-.mm[data-mode="edit"] .mm-node:focus-within > :is(.mm-add, .mm-x){ display:grid; }
-/* the knob where a branch's lines start: fold it away, or open it back up */
-.mm-fold{ position:absolute; z-index:2; top:50%; right:-10px; min-width:18px; height:18px; margin-top:-9px; padding:0 4px; border-radius:99px;
-  display:grid; place-items:center; background:var(--surface); border:1.5px solid var(--s); color:var(--s); font-size:10.5px; font-weight:800; line-height:1;
-  transition:transform .2s var(--spring), background .2s; }
-.mm-fold:hover{ transform:scale(1.15); }
-.mm-node.sl .mm-fold{ right:auto; left:-10px; }
-.mm-node:has(> .mm-fold){ padding-right:20px; }              /* room for the knob on the side its lines leave from */
-.mm-node.sl:has(> .mm-fold){ padding-right:12px; padding-left:20px; }
-.mm-node.folded .mm-fold{ background:var(--s); color:#fff; }
-.mm-due{ flex:none; padding:1px 7px; border-radius:99px; font-size:10.5px; font-weight:700; font-style:normal;
+.mm-count{ flex:none; font-size:10.5px; font-weight:700; font-variant-numeric:tabular-nums; color:color-mix(in srgb, var(--s) 75%, var(--ink)); opacity:.8; }
+.mm-count[hidden]{ display:none; }
+
+/* the tick: sits just before the text, centred with it; a 30px hit area */
+.mm-tick{ position:relative; flex:none; width:16px; height:16px; padding:0; border-radius:50%; border:1.6px solid var(--s); background:var(--surface);
+  display:grid; place-items:center; cursor:pointer; transition:background-color .22s var(--ease), transform .2s var(--mm-spring); }
+.mm-tick::before{ content:''; position:absolute; inset:-7px; border-radius:50%; }
+.mm-tick:hover{ transform:scale(1.12); }
+.mm-tick svg{ width:10px; height:10px; overflow:visible; }
+.mm-tick path{ fill:none; stroke:#fff; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; stroke-dasharray:12; stroke-dashoffset:12;
+  transition:stroke-dashoffset .22s var(--ease) .08s; }
+.done .mm-tick{ background:var(--s); animation:mmPop .42s var(--mm-spring); }
+.done .mm-tick path{ stroke-dashoffset:0; }
+@keyframes mmPop{ 0%{ transform:scale(1); } 35%{ transform:scale(1.3); } 100%{ transform:scale(1); } }
+
+/* the fold knob: quiet until hover or selection; folded it shows the hidden count */
+.mm-knob{ position:absolute; z-index:2; left:calc(100% + 5px); top:calc(50% - 21px); min-width:14px; height:14px; padding:0 4px; border-radius:99px;
+  display:grid; place-items:center; border:1.5px solid var(--s); background:var(--surface); color:var(--s);
+  font-size:9.5px; font-weight:800; line-height:1; cursor:pointer;
+  opacity:0; transform:scale(.6); transition:opacity .2s var(--ease), transform .26s var(--mm-spring), background-color .2s; }
+.mm-sub .mm-knob{ top:calc(100% - 21px); }
+.mm-node.sl .mm-knob{ left:auto; right:calc(100% + 5px); }
+.mm-node:hover > .mm-knob, .mm-node.sel > .mm-knob{ opacity:1; transform:none; }
+.mm-knob.folded{ opacity:1; transform:none; top:calc(50% - 7px); background:var(--s); color:#fff; }
+.mm-sub .mm-knob.folded{ top:calc(100% - 8px); }
+.mm-knob:hover{ transform:scale(1.15); }
+
+.mm-due{ flex:none; padding:1px 8px; border-radius:99px; font-size:10.5px; font-weight:700; font-style:normal; letter-spacing:0;
   color:var(--ink-3); background:rgba(255,255,255,.7); border:1px solid rgba(74,65,55,.12); }
+.mm-due[hidden]{ display:none; }
 .mm-due.soon{ color:#A07A2C; background:#FBF1D9; border-color:#EAD49B; }
 .mm-due.over{ color:#A6503F; background:#FBE6E0; border-color:#EBC2B6; }
-/* moving a box: it follows the pointer; the target shows where it will land */
-.mm[data-mode="edit"] .mm-node:not(.root){ cursor:grab; }
-.mm-node.dragging{ z-index:6; opacity:.92; box-shadow:var(--shadow-lg); pointer-events:none; transition:none; cursor:grabbing; }
-.mm-node.drop-in{ box-shadow:0 0 0 3px var(--s); }
-.mm-node.drop-before{ box-shadow:0 -4px 0 -1px var(--s); }
-.mm-node.drop-after{ box-shadow:0 4px 0 -1px var(--s); }
+
+/* where a dragged box will land */
+.mm-ph{ position:absolute; left:0; top:0; border-radius:8px; pointer-events:none;
+  border:1.5px dashed color-mix(in srgb, var(--s) 70%, transparent); background:color-mix(in srgb, var(--f) 55%, transparent);
+  transition:transform var(--mm-dur) var(--mm-spring), opacity .2s var(--ease); }
+
+/* the contextual toolbar: one per window, screen-sized at any zoom */
+.mm-tools{ position:absolute; z-index:5; left:0; top:0; display:flex; gap:1px; padding:3px; border-radius:99px;
+  background:var(--surface); border:1px solid var(--line); box-shadow:var(--shadow-md);
+  opacity:0; pointer-events:none; transform:translate(var(--tx, 0), calc(var(--ty, 0) + 6px));
+  transition:opacity .2s var(--ease), transform .3s var(--mm-spring); }
+.mm-tools.on{ opacity:1; pointer-events:auto; transform:translate(var(--tx, 0), var(--ty, 0)); }
+.mm-tools.instant{ transition:opacity .2s var(--ease); }
+.mm-tools button{ width:30px; height:26px; border-radius:99px; display:grid; place-items:center; color:var(--ink-2); transition:background-color .15s, color .15s; }
+.mm-tools button[hidden]{ display:none; }
+.mm-tools button:hover{ background:var(--surface-2); color:var(--ink); }
+.mm-tools svg{ width:15px; height:15px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; transition:transform .25s var(--mm-spring); }
+.mm-tools [data-tool="fold"].folded svg{ transform:rotate(-90deg); }
+.mm-tools [data-tool="del"]:hover, .mm-tools [data-tool="del"].arm{ color:#9E5544; background:var(--bad-soft); }
+
+@media (prefers-reduced-motion: reduce){
+  .mm .mm-node, .mm .mm-lines path, .mm .mm-ph, .mm .mm-tools, .mm .mm-node *{ transition:opacity .12s linear !important; animation:none !important; }
+}
 
 .toast{ position:fixed; left:50%; bottom:26px; transform:translate(-50%,16px); z-index:70; background:var(--ink); color:#F7F2E8; font-size:13px; padding:10px 16px; border-radius:99px; box-shadow:var(--shadow-lg); opacity:0; pointer-events:none; transition:opacity .3s var(--ease), transform .34s var(--ease-out); }
 .toast.on{ opacity:1; transform:translate(-50%,0); }
@@ -1219,18 +1272,23 @@ body.cal-view .app{ width:max-content; max-width:100%; }
 </aside>
 
 <div class="scrim" id="mmScrim"></div>
-<div class="mm" id="mm" data-mode="view" role="dialog" aria-modal="true" aria-label="Mind map">
+<div class="mm" id="mm" role="dialog" aria-modal="true" aria-label="Mind map">
   <div class="mm-bar">
     <div class="mm-ttl"><div class="mm-kick">Mind map</div><h2 id="mmTitle"></h2></div>
     <label class="mm-link">Deadline <select id="mmDeadline" aria-label="Linked deadline"></select></label>
-    <div class="mm-modes" role="tablist"><button type="button" data-mode="view">View</button><button type="button" data-mode="edit">Edit</button></div>
     <button class="ghost" id="mmFit" type="button" title="Fit the whole map in view">Fit</button>
     <button class="mm-del" id="mmDel" type="button">Delete map</button>
     <button class="x-btn" id="mmClose" type="button" aria-label="Close">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
     </button>
   </div>
-  <div class="mm-stage" id="mmStage">
+  <div class="mm-stage" id="mmStage" tabindex="-1">
+    <div class="mm-tools" id="mmTools" role="toolbar" aria-label="Box actions">
+      <button type="button" data-tool="child" title="Add a box under this one (Tab)"><svg viewBox="0 0 24 24"><path d="M5 4v8a3 3 0 0 0 3 3h5"/><path d="M18 12v6M15 15h6"/></svg></button>
+      <button type="button" data-tool="sibling" title="Add a box beside this one (Shift+Enter)"><svg viewBox="0 0 24 24"><path d="M4 7h10M4 17h6"/><path d="M18 14v6M15 17h6"/></svg></button>
+      <button type="button" data-tool="fold" title="Fold or unfold this branch"><svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5"/></svg></button>
+      <button type="button" data-tool="del" title="Delete (Delete key)"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17"/></svg></button>
+    </div>
     <div class="mm-canvas" id="mmCanvas"><svg class="mm-lines" id="mmLines"></svg><div id="mmNodes"></div></div>
     <div class="mm-help" id="mmHelp"></div>
   </div>
@@ -3719,12 +3777,17 @@ document.addEventListener('keydown', e=>{ if (e.key === 'Escape' && dlPanel.clas
 /* ============================================================
    MIND MAPS — describe a task as a map, tick off its leaves
    ============================================================ */
-/* [{ id, root:{ id, text, done?, collapsed?, children:[…] }, deadline?, updated }]
-   under a reserved key. The root's text is the map's title. Leaves (no children)
-   carry a tick; a ticked leaf fades, and a branch fades once every leaf under it is
-   ticked. Only the centre carries a date: the linked deadline's. Saved while it exists; deleting a map
-   removes it for good. Layout is automatic: branches alternate right then left of
-   the root, each subtree stacked in its own band; folded branches take one row. */
+/* Data: [{ id, root:{ id, text, done?, collapsed?, children:[…] }, deadline?, updated }] under a
+   reserved key. The root's text is the map's title; only the centre carries a date (the linked
+   deadline's). Leaves carry a tick; a ticked leaf fades, and a branch fades once every leaf
+   under it is ticked. Saved while it exists; deleting a map removes it for good.
+
+   One mode: click a box to select it, type / Enter / double-click to edit it inline.
+   Rendering is keyed — every shown box and every branch is one DOM element that lives as long
+   as its node, positioned by transform with spring transitions — so any change, even one made
+   mid-animation, glides on from wherever things are. Data always changes first; a box that
+   disappears becomes a short-lived visual copy that shrinks into its parent, so visuals can
+   never fall out of sync with what's saved. */
 const MM_KEY = '_mindmaps';
 const mmAll   = () => Array.isArray(DB[MM_KEY]) ? DB[MM_KEY] : [];
 const mmWrite = () => Array.isArray(DB[MM_KEY]) ? DB[MM_KEY] : (DB[MM_KEY] = []);
@@ -3737,22 +3800,24 @@ const MM_COLORS = [                                   // soft fills, stronger st
 const mmEl = document.getElementById('mm'), mmScrim = document.getElementById('mmScrim');
 const mmStage = document.getElementById('mmStage'), mmCanvas = document.getElementById('mmCanvas');
 const mmNodes = document.getElementById('mmNodes'), mmLines = document.getElementById('mmLines');
-const MM = { map:null, mode:'view', z:1, tx:0, ty:0, pos:{}, sizes:{}, saveT:null, hist:[], fut:[], typing:false, typeT:null };
+const mmTools = document.getElementById('mmTools'), mmHelp = document.getElementById('mmHelp');
+const MM = {
+  map:null, sel:null, edit:null, hist:[], fut:[], saveT:null,
+  view:{ z:1, tx:0, ty:0 }, anim:0,
+  L:{}, parent:{}, br:{}, list:[], faded:new Set(),
+  els:new Map(), ghosts:new Map(), paths:new Map(), pathGhosts:new Map(), phEl:null,
+  press:null, drag:null, pan:null,
+};
 
 const mmIsLeaf = n => !n.children || !n.children.length;
-const mmKids   = n => n.collapsed ? [] : (n.children || []);          // what the layout shows
 function mmStats(n){
   if (mmIsLeaf(n)) return { t:1, d: n.done ? 1 : 0 };
   return n.children.reduce((a, c) => { const s = mmStats(c); a.t += s.t; a.d += s.d; return a; }, { t:0, d:0 });
 }
 const mmCount = n => (n.children || []).reduce((a, c) => a + 1 + mmCount(c), 0);
 const mmHas = (n, id) => (n.children || []).some(c => c.id === id || mmHas(c, id));
-/** Visit every node: f(node, parent, depth, branchIndex). `shown` skips what's folded away. */
-function mmWalk(n, f, parent = null, depth = 0, branch = -1, shown = false){
-  f(n, parent, depth, branch);
-  (shown && depth ? mmKids(n) : (n.children || [])).forEach((c, i) => mmWalk(c, f, n, depth + 1, depth === 0 ? i : branch, shown));
-}
-function mmLocate(id, root = MM.map.root){ let hit = null; mmWalk(root, (n, p) => { if (n.id === id) hit = { n, p }; }); return hit; }
+function mmWalk(n, f, parent = null){ f(n, parent); (n.children || []).forEach(c => mmWalk(c, f, n)); }
+function mmLocate(id, root = MM.map && MM.map.root){ let hit = null; if (root) mmWalk(root, (n, p) => { if (n.id === id) hit = { n, p }; }); return hit; }
 /** Only the centre shows a date: the linked deadline's. */
 function mmCentreDue(){
   const d = MM.map && MM.map.deadline && dlFind(MM.map.deadline); if (!d) return null;
@@ -3769,11 +3834,13 @@ function mmRestore(from, to){
   const st = JSON.parse(from.pop());
   MM.map.root = st.root;
   if (st.deadline) MM.map.deadline = st.deadline; else delete MM.map.deadline;
+  if (MM.sel && !mmLocate(MM.sel)) MM.sel = null;
   mmSave(); mmDeadlineOptions(); mmRender();
   return true;
 }
+function mmSave(){ MM.map.updated = nowStamp(); save(); }
 
-/* ---- rail: the list of maps (with the next few ticks), and the chip on a linked deadline ---- */
+/* ---- rail: the list of maps, and the chip on a linked deadline ---- */
 function mmChip(deadlineId){
   const m = mmAll().find(x => x.deadline === deadlineId); if (!m) return '';
   return `<button class="dl-map" type="button" data-map="${m.id}" title="Open the linked mind map">◈ Map</button>`;
@@ -3787,240 +3854,640 @@ function renderMindmaps(){
     : `<div class="dl-empty">No mind maps yet.<br>Tap <b>+</b> to map out a task.</div>`;
 }
 document.getElementById('mmList').addEventListener('click', e=>{
-  const card = e.target.closest('.mm-card'); if (card) openMindmap(card.dataset.map, 'view');
+  const card = e.target.closest('.mm-card'); if (card) openMindmap(card.dataset.map);
 });
+
+/* ---- the shown tree ------------------------------------------------------------
+   Folded branches hide their children. While dragging, the dragged branch is lifted out and
+   a placeholder (id '__ph') sits where it would land. */
+function mmViewTree(){
+  const d = MM.drag;
+  const build = (n, depth) => ({ id: n.id, n, depth,
+    kids: depth && n.collapsed ? [] : (n.children || []).filter(c => !(d && c.id === d.id)).map(c => build(c, depth + 1)) });
+  const root = build(MM.map.root, 0);
+  if (d && d.target){
+    const ph = { id:'__ph', n:null, ph:true, kids:[] };
+    const find = (v, p) => v.id === d.target ? { v, p } : v.kids.reduce((a, k) => a || find(k, v), null);
+    const hit = find(root, null);
+    if (hit){
+      if (d.where === 'in') hit.v.kids.push(ph);
+      else { const i = hit.p.kids.indexOf(hit.v); hit.p.kids.splice(d.where === 'before' ? i : i + 1, 0, ph); }
+      const depthOf = (v, dep) => { v.depth = dep; v.kids.forEach(k => depthOf(k, dep + 1)); };
+      depthOf(root, 0);
+    }
+  }
+  return root;
+}
+
+/* ---- layout --------------------------------------------------------------------
+   Main branches alternate right / left by their order — a pure function of the main branches,
+   so editing anything deeper never moves a branch to the other side, and a reopened map looks
+   the same. Each subtree stacks in its own band; a parent sits level with the middle of its
+   children. Deeper boxes are text on a line: their anchor is the line under the text. */
+const MM_LINE = d => [8, 5, 3, 2.4, 2][Math.min(d, 4)];          // branch width leaving depth d
+const mmGap = d => d === 1 ? 16 : 7;
+const mmHG  = d => d === 1 ? 46 : d === 2 ? 30 : 24;
+function mmLayout(view, size){
+  const L = {};
+  const above = v => v.depth >= 2 ? size(v.id).h - 1 : size(v.id).h / 2;
+  const below = v => v.depth >= 2 ? 1 : size(v.id).h / 2;
+  const stack = kids => {
+    let off = 0, first = 0, last = 0;
+    kids.forEach((k, i) => { const m = meas(k); if (!i) first = off + m.ly; last = off + m.ly; k._off = off; off += m.band + mmGap(k.depth); });
+    return { total: off - mmGap(kids[0].depth), mid: (first + last) / 2 };
+  };
+  const meas = v => {
+    if (v._m) return v._m;
+    const a = above(v), b = below(v);
+    if (!v.kids.length) return (v._m = { band: a + b, ly: a, kidsTop: 0 });
+    const st = stack(v.kids), shift = Math.max(0, a - st.mid);
+    return (v._m = { band: Math.max(st.total + shift, st.mid + shift + b), ly: st.mid + shift, kidsTop: shift });
+  };
+  const place = (v, side, xNear, top) => {
+    const m = meas(v), sz = size(v.id), ay = top + m.ly;
+    L[v.id] = { x: side > 0 ? xNear : xNear - sz.w, y: v.depth >= 2 ? ay - sz.h + 1 : ay - sz.h / 2,
+                w: sz.w, h: sz.h, side, depth: v.depth, ay, ix: xNear, ox: xNear + side * sz.w };
+    v.kids.forEach(k => place(k, side, L[v.id].ox + side * mmHG(k.depth), top + m.kidsTop + k._off));
+  };
+  const rs = size(view.id);
+  L[view.id] = { x: -rs.w / 2, y: -rs.h / 2, w: rs.w, h: rs.h, side: 0, depth: 0, ay: 0, ix: 0, ox: 0 };
+  [1, -1].forEach(side => {
+    const list = view.kids.filter((_, i) => (i % 2 ? -1 : 1) === side);
+    if (!list.length) return;
+    const st = stack(list);
+    list.forEach(k => place(k, side, side * (rs.w / 2 + mmHG(1)), -st.mid + k._off));
+  });
+  return L;
+}
+/** Where a parent's branches leave from: the centre's side edge, a pill's outer edge, or the far
+    end of a text box's line. */
+const mmAnchor = (p, side) => ({ x: p.depth === 0 ? side * p.w / 2 : p.ox, y: p.ay });
+const f1 = n => Math.round(n * 10) / 10;
+/** A tapered branch as one filled shape: a curve out to the child, then (for text boxes) the
+    line on under its text. Always the same commands, so shapes morph smoothly into each other. */
+function mmEdgeD(p, c){
+  const a = mmAnchor(p, c.side), xn = c.ix, xf = c.depth >= 2 ? c.ox : c.ix, y2 = c.ay;
+  const w1 = MM_LINE(p.depth), wn = c.depth >= 2 ? MM_LINE(c.depth) + .5 : MM_LINE(1) - .5, wf = MM_LINE(c.depth);
+  const mx = a.x + (xn - a.x) * .5;
+  return `M${f1(a.x)} ${f1(a.y - w1/2)} C${f1(mx)} ${f1(a.y - w1/2)} ${f1(mx)} ${f1(y2 - wn/2)} ${f1(xn)} ${f1(y2 - wn/2)}`
+       + ` L${f1(xf)} ${f1(y2 - wf/2)} L${f1(xf)} ${f1(y2 + wf/2)} L${f1(xn)} ${f1(y2 + wn/2)}`
+       + ` C${f1(mx)} ${f1(y2 + wn/2)} ${f1(mx)} ${f1(a.y + w1/2)} ${f1(a.x)} ${f1(a.y + w1/2)} Z`;
+}
+/** The same shape shrunk to a point — where branches grow out of and retract into. */
+const mmDotD = (x, y) => { const p = `${f1(x)} ${f1(y)}`; return `M${p} C${p} ${p} ${p} L${p} L${p} L${p} C${p} ${p} ${p} Z`; };
+const mmSetD = (path, d) => { path.style.d = `path("${d}")`; };
+/** A box placed so its growth point (inner edge, on its line) sits at (ax, ay), scaled by s. */
+function mmXf(r, ax, ay, s){
+  const ox = r.side < 0 ? r.w : 0, oy = r.depth >= 2 ? r.h - 1 : r.h / 2;
+  return `translate(${f1(ax - ox)}px, ${f1(ay - oy)}px) scale(${s})`;
+}
+const mmOrigin = r => `${r.side < 0 ? '100%' : r.side > 0 ? '0%' : '50%'} ${r.depth >= 2 ? 'calc(100% - 1px)' : '50%'}`;
 
 /* ---- drawing ---- */
-function mmRender(focusId){
-  const m = MM.map, edit = MM.mode === 'edit', prev = MM.pos;
-  mmEl.dataset.mode = MM.mode;
+function mmInner(depth, leaf){
+  return (depth && leaf ? `<button class="mm-tick" type="button" data-act="tick" tabindex="-1" aria-label="Mark done"><svg viewBox="0 0 12 12"><path d="M2.6 6.4 5 8.8 9.6 3.6"/></svg></button>` : '')
+    + `<span class="mm-txt" data-ph="${depth ? 'Type…' : 'Map title'}"></span>`
+    + (depth && !leaf ? `<span class="mm-count"></span><button class="mm-knob" type="button" data-act="fold" tabindex="-1"></button>` : '')
+    + (depth ? '' : `<em class="mm-due" hidden></em>`);
+}
+function mmFill(el, v, c){
+  const n = v.n, depth = v.depth, leaf = mmIsLeaf(n);
+  const kind = depth === 0 ? 'mm-root' : depth === 1 ? 'mm-main' : depth === 2 ? 'mm-sub' : 'mm-sub mm-d3';
+  const sig = kind + (leaf ? 'L' : 'B');
+  if (el._sig !== sig){ el._sig = sig; el.innerHTML = mmInner(depth, leaf); }
+  if (c){ el.style.setProperty('--f', c.f); el.style.setProperty('--s', c.s); }
+  const st = leaf ? null : mmStats(n);
+  const done = depth > 0 && leaf && !!n.done, dim = depth > 0 && !!st && st.t > 0 && st.d === st.t;
+  const keep = ['sl', 'sel', 'mm-enter', 'mm-hide', 'lift', 'editing'].filter(k => el.classList.contains(k));
+  el.className = ['mm-node', kind, done && 'done', dim && 'dim', depth && !leaf && n.collapsed && 'folded', ...keep].filter(Boolean).join(' ');
+  const t = el.querySelector('.mm-txt'), txt = n.text || '';
+  if (!(MM.edit && MM.edit.id === v.id) && t.textContent !== txt) t.textContent = txt;
+  const cnt = el.querySelector('.mm-count');
+  if (cnt){ cnt.textContent = `${st.d}/${st.t}`; cnt.hidden = dim || !st.t; }       // a finished branch drops its count
+  const kb = el.querySelector('.mm-knob');
+  if (kb){ kb.textContent = n.collapsed ? `+${mmCount(n)}` : ''; kb.classList.toggle('folded', !!n.collapsed);
+           kb.title = n.collapsed ? 'Unfold this branch' : 'Fold this branch away'; }
+  const due = el.querySelector('.mm-due');
+  if (due){ const d = mmCentreDue(); due.hidden = !d; if (d){ due.textContent = dlShort(d.key); due.className = `mm-due ${d.cls}`; } }
+  return done || dim;
+}
+function mmRender(){
+  const m = MM.map; if (!m) return;
+  const view = mmViewTree(), list = [];
+  (function walk(v, pid, br){
+    v.pid = pid; v.br = br; list.push(v);
+    v.kids.forEach(k => walk(k, v.id, v.depth === 0 ? (k.ph ? MM.drag.br : m.root.children.indexOf(k.n)) : br));
+  })(view, null, -1);
+  const drag = MM.drag, dragIds = drag ? drag.ids : null;
+
+  // 1. boxes: reuse, revive a copy that was on its way out, or create
+  const entering = [], faded = new Set(), newlyFaded = [];
+  list.forEach(v => {
+    if (v.ph) return;
+    let el = MM.els.get(v.id);
+    if (!el && MM.ghosts.has(v.id)){
+      el = MM.ghosts.get(v.id); MM.ghosts.delete(v.id); clearTimeout(el._t);
+      el.classList.remove('mm-ghost'); el.style.removeProperty('--ed'); MM.els.set(v.id, el);
+    }
+    if (!el){ el = document.createElement('div'); el.dataset.id = v.id; mmNodes.appendChild(el); MM.els.set(v.id, el); entering.push(v); }
+    if (mmFill(el, v, v.depth ? MM_COLORS[v.br % MM_COLORS.length] : null)){
+      faded.add(v.id); if (!MM.faded.has(v.id)) newlyFaded.push(v);
+    }
+    el.classList.toggle('mm-hide', false);
+  });
+  if (dragIds) dragIds.forEach(id => { if (id !== drag.id){ const el = MM.els.get(id); if (el) el.classList.add('mm-hide'); } });
+
+  // 2. measure and lay out
+  const sizes = {};
+  list.forEach(v => { if (v.ph) sizes[v.id] = { w: drag.w, h: drag.h }; else { const el = MM.els.get(v.id); sizes[v.id] = { w: el.offsetWidth, h: el.offsetHeight }; } });
+  const L = mmLayout(view, id => sizes[id]);
+
+  // 3. start states: new boxes at their parent's growth point, new branches as a point there
+  entering.forEach(v => {
+    const el = MM.els.get(v.id), r = L[v.id];
+    el.classList.add('mm-enter'); el.style.transformOrigin = mmOrigin(r);
+    if (!v.pid){ el.style.transform = `translate(${r.x}px, ${r.y}px) scale(.6)`; el.style.opacity = 0; return; }
+    const a = mmAnchor(L[v.pid], r.side);
+    el.style.transform = mmXf(r, a.x, a.y, .2); el.style.opacity = 0;
+  });
+  const keepPaths = new Set();
+  list.forEach(v => {
+    if (!v.pid) return;
+    let path = MM.paths.get(v.id) || MM.pathGhosts.get(v.id);
+    if (path && MM.pathGhosts.has(v.id)){ MM.pathGhosts.delete(v.id); clearTimeout(path._t); path.style.removeProperty('--ed'); MM.paths.set(v.id, path); }
+    if (!path){
+      path = document.createElementNS('http://www.w3.org/2000/svg', 'path'); path.dataset.id = v.id;
+      const a = mmAnchor(L[v.pid], L[v.id].side);
+      path.style.transition = 'none'; mmSetD(path, mmDotD(a.x, a.y));
+      mmLines.appendChild(path); MM.paths.set(v.id, path); path._new = true;
+    }
+    keepPaths.add(v.id);
+  });
+  void mmNodes.offsetWidth;                                         // commit the start states
+
+  // 4. everything to its target — CSS transitions retarget from wherever each one is now
+  const enterCount = {};
+  list.forEach(v => {
+    if (v.ph) return mmPlaceholder(L[v.id], MM_COLORS[v.br % MM_COLORS.length]);
+    const el = MM.els.get(v.id), r = L[v.id];
+    el.classList.toggle('sl', r.side < 0);
+    el.classList.toggle('sel', v.id === MM.sel);
+    el.style.transformOrigin = mmOrigin(r);
+    if (el.classList.contains('mm-enter')){
+      const k = enterCount[v.pid] = (enterCount[v.pid] || 0) + 1;            // the branch draws first, then the box
+      el.style.setProperty('--ed', `${90 + Math.min(k - 1, 5) * 35}ms`);
+      el.classList.remove('mm-enter');
+      setTimeout(() => el.style.removeProperty('--ed'), 900);
+    }
+    el.style.transform = `translate(${f1(r.x)}px, ${f1(r.y)}px)`; el.style.opacity = '';
+  });
+  list.forEach(v => {
+    if (!v.pid) return;
+    const path = MM.paths.get(v.id), c = MM_COLORS[v.br % MM_COLORS.length];
+    if (path._new){ path.style.transition = ''; path._new = false; }
+    path.setAttribute('fill', c.s);
+    path.classList.toggle('ph', !!v.ph);
+    path.classList.toggle('dim', faded.has(v.id));
+    path.style.opacity = '';
+    mmSetD(path, mmEdgeD(L[v.pid], L[v.id]));
+  });
+  if (!list.some(v => v.ph) && MM.phEl){ const ph = MM.phEl; MM.phEl = null; ph.style.opacity = 0; setTimeout(() => ph.remove(), 220); }
+
+  // 5. a ticked leaf fades after its strike has drawn; a finished branch's fade climbs toward the centre
+  newlyFaded.sort((a, b) => b.depth - a.depth).forEach((v, i) => {
+    const delay = `${220 + i * 110}ms`, el = MM.els.get(v.id), path = MM.paths.get(v.id);
+    el.style.setProperty('--fd', delay); if (path) path.style.setProperty('--fd', delay);
+    setTimeout(() => { el.style.removeProperty('--fd'); if (path) path.style.removeProperty('--fd'); }, 1600);
+  });
+  MM.faded = faded;
+
+  // 6. boxes and branches that are gone shrink back into the nearest box still on screen
+  const shown = new Set(list.map(v => v.id));
+  const homeOf = (id, side) => { let a = MM.parent[id]; while (a && !L[a]) a = MM.parent[a]; return a ? mmAnchor(L[a], side) : null; };
+  let gi = 0;
+  for (const [id, el] of MM.els){
+    if (shown.has(id) || (dragIds && dragIds.has(id))) continue;
+    MM.els.delete(id);
+    const r = MM.L[id], home = r && homeOf(id, r.side);
+    el.classList.add('mm-ghost'); el.classList.remove('sel', 'editing');
+    el.style.setProperty('--ed', `${Math.min(gi++, 6) * 25}ms`);
+    if (home) el.style.transform = mmXf(r, home.x, home.y, .2);
+    el.style.opacity = 0;
+    MM.ghosts.set(id, el);
+    el._t = setTimeout(() => { el.remove(); MM.ghosts.delete(id); }, 560);
+  }
+  for (const [id, path] of MM.paths){
+    if (keepPaths.has(id)) continue;
+    if (dragIds && dragIds.has(id)){ path.style.opacity = 0; continue; }
+    MM.paths.delete(id);
+    const r = MM.L[id], home = r && homeOf(id, r.side);
+    if (home) mmSetD(path, mmDotD(home.x, home.y));
+    path.style.opacity = 0;
+    MM.pathGhosts.set(id, path);
+    path._t = setTimeout(() => { path.remove(); MM.pathGhosts.delete(id); }, 560);
+  }
+
+  MM.L = Object.assign({}, dragIds ? MM.L : {}, L);
+  MM.list = list.filter(v => !v.ph);
+  const parent = {}; list.forEach(v => { parent[v.id] = v.pid; MM.br[v.id] = v.br; });
+  MM.parent = Object.assign({}, MM.parent, parent);
+  if (MM.sel && !L[MM.sel] && !(dragIds && dragIds.has(MM.sel))) MM.sel = null;
   document.getElementById('mmTitle').textContent = m.root.text || 'Untitled map';
-  document.getElementById('mmHelp').textContent = edit
-    ? 'Enter: sibling · Tab: child · drag a box onto another to move it · Backspace on an empty box: remove · Ctrl+Z: undo · scroll to zoom'
-    : 'Tick the last boxes as you finish them · click a knob to fold a branch · drag the background to move · Ctrl+Z: undo';
-  const fresh = !Object.keys(prev).length;
-  mmEl.classList.toggle('mm-nomotion', fresh);
-  const due = mmCentreDue();
-  let html = '';
-  mmWalk(m.root, (n, p, depth, branch)=>{
-    const c = depth ? MM_COLORS[branch % MM_COLORS.length] : null;
-    const leaf = depth > 0 && mmIsLeaf(n), st = depth > 0 && !leaf ? mmStats(n) : null;
-    const was = prev[n.id] || (p && prev[p.id]) || { x:0, y:0 }, sz = MM.sizes[n.id] || { w:0, h:0 };
-    const folded = depth > 0 && !leaf && n.collapsed;
-    const cls = [depth === 0 ? 'root' : depth === 1 ? 'l1' : 'deep', leaf ? 'leaf' : '', leaf && n.done ? 'done' : '',
-                 st && st.d === st.t ? 'dim' : '', folded ? 'folded' : '', was.side < 0 ? 'sl' : ''].join(' ');
-    html += `<div class="mm-node ${cls}" data-id="${n.id}" style="left:${was.x - sz.w / 2}px;top:${was.y - sz.h / 2}px${c ? `;--f:${c.f};--s:${c.s}` : ''}">
-      ${leaf ? `<button class="mm-chk" type="button" data-act="chk" aria-label="Mark done"></button>` : ''}
-      <span class="mm-txt" data-ph="${depth ? 'Type…' : 'Map title'}"${edit ? ' contenteditable="plaintext-only"' : ''} spellcheck="${edit}">${escHtml(n.text || '')}</span>
-      ${!depth && due ? `<em class="mm-due ${due.cls}">${dlShort(due.key)}</em>` : ''}
-      ${depth && !leaf ? `<button class="mm-fold" type="button" data-act="fold" title="${n.collapsed ? 'Unfold this branch' : 'Fold this branch away'}">${n.collapsed ? '+' + mmCount(n) : '−'}</button>` : ''}
-      ${edit ? `<button class="mm-add" type="button" data-act="add" title="Add a box under this one (Tab)">+</button>` : ''}
-      ${edit && depth ? `<button class="mm-x" type="button" data-act="del" title="Delete">×</button>` : ''}
-    </div>`;
-  }, null, 0, -1, true);
-  mmNodes.innerHTML = html;
-  mmReflow();
-  if (fresh) requestAnimationFrame(()=> requestAnimationFrame(()=> mmEl.classList.remove('mm-nomotion')));
-  if (focusId) mmFocus(focusId);
+  mmPlaceTools(); mmHint();
 }
-function mmFocus(id, x, y){
-  const t = mmNodes.querySelector(`[data-id="${id}"] .mm-txt`); if (!t) return;
-  t.focus();
-  let r = x != null && document.caretRangeFromPoint ? document.caretRangeFromPoint(x, y) : null;
-  if (!r || !t.contains(r.startContainer)){ r = document.createRange(); r.selectNodeContents(t); r.collapse(false); }
-  const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+function mmPlaceholder(r, c){
+  let ph = MM.phEl;
+  const xf = `translate(${f1(r.x)}px, ${f1(r.y)}px)`;
+  if (!ph){
+    ph = MM.phEl = document.createElement('div'); ph.className = 'mm-ph';
+    ph.style.transition = 'none'; ph.style.opacity = 0; ph.style.transform = xf;
+    mmNodes.prepend(ph); void ph.offsetWidth; ph.style.transition = '';
+  }
+  ph.style.width = `${r.w}px`; ph.style.height = `${r.h}px`;
+  ph.style.setProperty('--f', c.f); ph.style.setProperty('--s', c.s);
+  ph.style.transform = xf; ph.style.opacity = 1;
 }
-/** Measure every box, lay the tree out, move the boxes and redraw the connectors. */
-function mmReflow(){
-  const m = MM.map, sizes = {}, H = {}, pos = {}, VG = 12, HG = 48;
-  mmNodes.querySelectorAll('.mm-node').forEach(el => { sizes[el.dataset.id] = { w: el.offsetWidth, h: el.offsetHeight, el }; });
-  const band = n => H[n.id] ?? (H[n.id] = !mmKids(n).length ? sizes[n.id].h
-    : Math.max(sizes[n.id].h, mmKids(n).reduce((a, c) => a + band(c), 0) + VG * (mmKids(n).length - 1)));
-  const place = (n, side, x0, top)=>{
-    const sz = sizes[n.id], x = x0 + side * (HG + sz.w / 2), y = top + band(n) / 2;
-    pos[n.id] = { x, y, side };
-    const kids = mmKids(n); if (!kids.length) return;
-    let cy = y - (kids.reduce((a, c) => a + band(c), 0) + VG * (kids.length - 1)) / 2;
-    kids.forEach(c => { place(c, side, x + side * sz.w / 2, cy); cy += band(c) + VG; });
-  };
-  pos[m.root.id] = { x:0, y:0, side:0 };
-  const kids = m.root.children || [], nr = Math.ceil(kids.length / 2), rw = sizes[m.root.id].w;
-  [[kids.slice(0, nr), 1], [kids.slice(nr), -1]].forEach(([list, side])=>{
-    let y = -(list.reduce((a, c) => a + band(c), 0) + VG * Math.max(0, list.length - 1)) / 2;
-    list.forEach(c => { place(c, side, side * rw / 2, y); y += band(c) + VG; });
-  });
-  Object.entries(sizes).forEach(([id, sz])=>{
-    const p = pos[id]; sz.el.style.left = `${p.x - sz.w / 2}px`; sz.el.style.top = `${p.y - sz.h / 2}px`;
-    sz.el.classList.toggle('sl', p.side < 0);
-  });
-  // connectors: one path per shown child, kept across redraws so they glide with the boxes
-  const keep = new Set();
-  mmWalk(m.root, (n, par, depth, branch)=>{
-    if (!par) return;
-    const a = pos[par.id], b = pos[n.id], side = b.side;
-    const x1 = a.x + side * sizes[par.id].w / 2, x2 = b.x - side * sizes[n.id].w / 2, mx = (x1 + x2) / 2;
-    let path = mmLines.querySelector(`[data-id="${n.id}"]`);
-    if (!path){ path = document.createElementNS('http://www.w3.org/2000/svg', 'path'); path.dataset.id = n.id; mmLines.appendChild(path); }
-    path.style.d = `path("M${x1} ${a.y} C${mx} ${a.y} ${mx} ${b.y} ${x2} ${b.y}")`;
-    path.setAttribute('stroke', MM_COLORS[branch % MM_COLORS.length].s);
-    path.setAttribute('stroke-width', depth === 1 ? 2.2 : 1.6);
-    const st = mmStats(n);
-    path.classList.toggle('dim', st.t > 0 && st.d === st.t);
-    keep.add(n.id);
-  }, null, 0, -1, true);
-  mmLines.querySelectorAll('path').forEach(el => { if (!keep.has(el.dataset.id)) el.remove(); });
-  MM.pos = pos; MM.sizes = sizes;
+function mmHint(){
+  mmHelp.textContent = MM.edit
+    ? 'Enter: done · Esc: cancel · Tab: done + add a child · Shift+Enter: done + add a sibling'
+    : MM.sel
+    ? 'Type to rename · Enter or F2: edit · Tab: add a child · Shift+Enter: add a sibling · arrows: move · Delete: remove · drag to move · Ctrl+Z / Ctrl+Y'
+    : 'Click a box to select it · tick the circles any time · drag the background to move, scroll to zoom · Esc closes';
 }
 
-/* ---- moving around: drag the background to pan, scroll to zoom, Fit to frame it ---- */
-const mmApply = () => { mmCanvas.style.transform = `translate(${MM.tx}px,${MM.ty}px) scale(${MM.z})`; };
-function mmFit(){
-  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-  Object.entries(MM.pos).forEach(([id, p])=>{ const sz = MM.sizes[id];
-    x0 = Math.min(x0, p.x - sz.w / 2); x1 = Math.max(x1, p.x + sz.w / 2); y0 = Math.min(y0, p.y - sz.h / 2); y1 = Math.max(y1, p.y + sz.h / 2); });
-  const W = mmStage.clientWidth, Hh = mmStage.clientHeight;
-  MM.z = Math.max(0.35, Math.min(1.3, (W - 120) / (x1 - x0 || 1), (Hh - 110) / (y1 - y0 || 1)));
-  MM.tx = W / 2 - MM.z * (x0 + x1) / 2; MM.ty = Hh / 2 - MM.z * (y0 + y1) / 2;
-  mmApply();
+/* ---- the contextual toolbar ---- */
+function mmPlaceTools(instant){
+  const id = MM.sel, r = id && MM.L[id], hit = id && mmLocate(id);
+  if (!r || !hit || MM.drag){ mmTools.classList.remove('on'); return; }
+  const leaf = mmIsLeaf(hit.n), root = !hit.p;
+  mmTools.querySelector('[data-tool="sibling"]').hidden = root;
+  mmTools.querySelector('[data-tool="del"]').hidden = root;
+  const fold = mmTools.querySelector('[data-tool="fold"]');
+  fold.hidden = root || leaf; fold.classList.toggle('folded', !!hit.n.collapsed);
+  fold.title = hit.n.collapsed ? 'Unfold this branch' : 'Fold this branch away';
+  const W = mmTools.offsetWidth || 130, H = 34, z = MM.view.z, v = MM.view;
+  const x = Math.max(8, Math.min(mmStage.clientWidth - W - 8, v.tx + z * (r.x + r.w / 2) - W / 2));
+  // above or below the box — whichever hides less of the rest of the map
+  const covered = y => MM.list.reduce((a, o) => {
+    const q = MM.L[o.id]; if (!q || o.id === id) return a;
+    const ox = Math.max(0, Math.min(x + W, v.tx + z * (q.x + q.w)) - Math.max(x, v.tx + z * q.x));
+    const oy = Math.max(0, Math.min(y + H, v.ty + z * (q.y + q.h)) - Math.max(y, v.ty + z * q.y));
+    return a + ox * oy;
+  }, 0) + (y < 4 || y + H > mmStage.clientHeight - 30 ? 1e9 : 0);
+  const above = v.ty + z * r.y - H - 6, below = v.ty + z * (r.y + r.h) + 8;
+  const y = covered(below) < covered(above) ? below : above;
+  if (instant) mmTools.classList.add('instant');
+  mmTools.style.setProperty('--tx', `${f1(x)}px`); mmTools.style.setProperty('--ty', `${f1(y)}px`);
+  mmTools.classList.add('on');
+  if (instant) requestAnimationFrame(() => mmTools.classList.remove('instant'));
 }
-let mmPan = null;
-mmStage.addEventListener('pointerdown', e=>{
-  if (e.target.closest('.mm-node') || e.button !== 0) return;
-  mmPan = { x: e.clientX, y: e.clientY, tx: MM.tx, ty: MM.ty };
-  mmStage.setPointerCapture(e.pointerId); mmStage.classList.add('panning');
-  if (document.activeElement && mmNodes.contains(document.activeElement)) document.activeElement.blur();
-});
-mmStage.addEventListener('pointermove', e=>{
-  if (!mmPan) return;
-  MM.tx = mmPan.tx + e.clientX - mmPan.x; MM.ty = mmPan.ty + e.clientY - mmPan.y; mmApply();
-});
-mmStage.addEventListener('pointerup', ()=>{ mmPan = null; mmStage.classList.remove('panning'); });
-mmStage.addEventListener('wheel', e=>{
-  e.preventDefault();
-  const r = mmStage.getBoundingClientRect(), px = e.clientX - r.left, py = e.clientY - r.top;
-  const z = Math.max(0.35, Math.min(2, MM.z * (e.deltaY < 0 ? 1.1 : 1 / 1.1)));
-  MM.tx = px - (px - MM.tx) * z / MM.z; MM.ty = py - (py - MM.ty) * z / MM.z; MM.z = z; mmApply();
-}, { passive:false });
-document.getElementById('mmFit').addEventListener('click', mmFit);
-
-/* ---- editing ---- */
-function mmSave(){ MM.map.updated = nowStamp(); save(); }
-function mmAdd(parentId){
-  mmSnap();
-  const hit = mmLocate(parentId), node = { id: mmUid(), text:'', children:[] };
-  (hit.n.children = hit.n.children || []).push(node);
-  delete hit.n.done; delete hit.n.collapsed;            // a leaf that grows children is an open branch now
-  mmSave(); mmRender(node.id);
-}
-function mmAddSibling(id){
-  const hit = mmLocate(id);
-  if (!hit.p) return mmAdd(id);
-  mmSnap();
-  const node = { id: mmUid(), text:'', children:[] };
-  hit.p.children.splice(hit.p.children.indexOf(hit.n) + 1, 0, node);
-  mmSave(); mmRender(node.id);
-}
-function mmRemove(id, focusAfter){
-  const hit = mmLocate(id); if (!hit || !hit.p) return;
-  mmSnap();
-  const i = hit.p.children.indexOf(hit.n);
-  hit.p.children.splice(i, 1);
-  mmSave();
-  mmRender(focusAfter ? (hit.p.children[i - 1] || hit.p).id : null);
-}
-mmNodes.addEventListener('click', e=>{
-  const btn = e.target.closest('[data-act]'); if (!btn) return;
-  const id = btn.closest('.mm-node').dataset.id, hit = mmLocate(id);
-  const act = btn.dataset.act;
-  if (act === 'chk'){ mmSnap(); hit.n.done = !hit.n.done; if (!hit.n.done) delete hit.n.done; mmSave(); mmRender(); }
-  else if (act === 'fold'){ hit.n.collapsed = !hit.n.collapsed; if (!hit.n.collapsed) delete hit.n.collapsed; mmSave(); mmRender(); }
-  else if (act === 'add') mmAdd(id);
-  else if (act === 'del'){
-    if (!mmIsLeaf(hit.n) && !btn.classList.contains('arm')){      // a whole branch takes a second click
-      btn.classList.add('arm'); btn.title = 'Click again to delete this branch';
-      setTimeout(()=> btn.classList.remove('arm'), 2500);
+mmTools.addEventListener('mousedown', e => e.preventDefault());           // keep an edit's caret where it is
+mmTools.addEventListener('pointerdown', e => e.stopPropagation());
+mmTools.addEventListener('click', e=>{
+  const b = e.target.closest('[data-tool]'); if (!b || !MM.sel) return;
+  const id = MM.sel, tool = b.dataset.tool;
+  if (tool === 'child') mmAddChild(id);
+  else if (tool === 'sibling') mmAddSibling(id);
+  else if (tool === 'fold') mmToggleFold(id);
+  else if (tool === 'del'){
+    const hit = mmLocate(id);
+    if (hit && !mmIsLeaf(hit.n) && !b.classList.contains('arm')){       // a whole branch takes a second click
+      b.classList.add('arm'); b.title = 'Click again to delete this whole branch';
+      setTimeout(() => { b.classList.remove('arm'); b.title = 'Delete (Delete key)'; }, 2500);
       return;
     }
+    b.classList.remove('arm');
     mmRemove(id);
   }
 });
-mmNodes.addEventListener('mousedown', e=>{ if (e.target.closest('[data-act]')) e.preventDefault(); });   // keep the caret where it is
+
+/* ---- selection and inline editing ---- */
+function mmSelect(id){
+  if (MM.edit && MM.edit.id !== id) mmCommitEdit();
+  MM.sel = id;
+  MM.els.forEach((el, k) => el.classList.toggle('sel', k === id));
+  mmPlaceTools(); mmHint();
+}
+function mmCaretEnd(t){ const r = document.createRange(); r.selectNodeContents(t); r.collapse(false); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
+/** mode 'end': edit with the caret after the text. 'replace': the typed character replaces it. */
+function mmStartEdit(id, mode, ch, isNew){
+  const el = MM.els.get(id), hit = mmLocate(id); if (!el || !hit) return;
+  if (MM.edit && MM.edit.id !== id) mmCommitEdit();
+  if (!MM.edit) MM.edit = { id, pre: mmState(), preText: hit.n.text || '', isNew: !!isNew };
+  MM.sel = id;
+  MM.els.forEach((e, k) => e.classList.toggle('sel', k === id));
+  const t = el.querySelector('.mm-txt');
+  t.setAttribute('contenteditable', 'plaintext-only'); t.spellcheck = true;
+  el.classList.add('editing');
+  if (mode === 'replace'){ t.textContent = ch; hit.n.text = ch; }
+  t.focus({ preventScroll:true }); mmCaretEnd(t);
+  if (mode === 'replace') mmRender(); else { mmPlaceTools(); mmHint(); }
+}
+function mmEndEditUI(e){
+  const el = MM.els.get(e.id); if (!el) return;
+  const t = el.querySelector('.mm-txt');
+  t.removeAttribute('contenteditable'); el.classList.remove('editing');
+  if (document.activeElement === t) t.blur();
+}
+function mmCommitEdit(){
+  const e = MM.edit; if (!e) return;
+  MM.edit = null; mmEndEditUI(e);
+  const hit = mmLocate(e.id);
+  if (hit && !e.isNew && (hit.n.text || '') !== e.preText){ MM.hist.push(e.pre); if (MM.hist.length > 100) MM.hist.shift(); MM.fut.length = 0; }
+  clearTimeout(MM.saveT); mmSave(); mmRender();
+}
+function mmCancelEdit(){
+  const e = MM.edit; if (!e) return;
+  MM.edit = null; mmEndEditUI(e);
+  const hit = mmLocate(e.id);
+  if (hit && e.isNew && !e.preText && hit.p){                // a box added just now and never kept: take it back out
+    const sibs = hit.p.children, i = sibs.indexOf(hit.n);
+    sibs.splice(i, 1); MM.hist.pop();
+    MM.sel = (sibs[i] || sibs[i - 1] || hit.p).id;
+  } else if (hit){ hit.n.text = e.preText; }
+  clearTimeout(MM.saveT); mmSave(); mmRender();
+}
 mmNodes.addEventListener('input', e=>{
-  const t = e.target.closest('.mm-txt'); if (!t) return;
-  if (!MM.typing){ mmSnap(); MM.typing = true; }                  // one undo step per burst of typing
-  clearTimeout(MM.typeT); MM.typeT = setTimeout(()=>{ MM.typing = false; }, 1200);
-  const hit = mmLocate(t.closest('.mm-node').dataset.id);
+  const t = e.target.closest('.mm-txt'); if (!t || !MM.edit) return;
+  const hit = mmLocate(MM.edit.id); if (!hit) return;
   hit.n.text = t.textContent;
-  if (!hit.p) document.getElementById('mmTitle').textContent = hit.n.text || 'Untitled map';
-  mmReflow();
+  mmRender();                                               // neighbours glide as the box grows
   clearTimeout(MM.saveT); MM.saveT = setTimeout(mmSave, 400);
 });
-mmNodes.addEventListener('focusout', ()=>{ MM.typing = false; });
-mmNodes.addEventListener('keydown', e=>{
-  const t = e.target.closest('.mm-txt'); if (!t || MM.mode !== 'edit') return;
-  const id = t.closest('.mm-node').dataset.id, hit = mmLocate(id);
-  if (e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); clearTimeout(MM.saveT); mmAddSibling(id); }
-  else if (e.key === 'Tab' && !e.shiftKey){ e.preventDefault(); clearTimeout(MM.saveT); mmAdd(id); }
-  else if (e.key === 'Backspace' && !t.textContent && hit.p && mmIsLeaf(hit.n)){ e.preventDefault(); mmRemove(id, true); }
-});
+mmNodes.addEventListener('focusout', e=>{ if (MM.edit && e.target.closest('.mm-txt')) mmCommitEdit(); });
 
-/* ---- moving a box: drag it onto another (middle = under it, top/bottom edge = before/after it) ---- */
-let mmDrag = null;
+/* ---- data changes (data first, then the picture follows) ---- */
+function mmNewNode(){ return { id: mmUid(), text:'', children:[] }; }
+function mmAddChild(id){
+  if (MM.edit) mmCommitEdit();
+  const hit = mmLocate(id); if (!hit) return;
+  mmSnap();
+  const node = mmNewNode();
+  (hit.n.children = hit.n.children || []).push(node);
+  delete hit.n.done; delete hit.n.collapsed;               // a leaf that grows children is an open branch now
+  MM.sel = node.id; mmSave(); mmRender();
+  mmStartEdit(node.id, 'end', null, true);
+}
+function mmAddSibling(id){
+  if (MM.edit) mmCommitEdit();
+  const hit = mmLocate(id); if (!hit) return;
+  if (!hit.p) return mmAddChild(id);
+  mmSnap();
+  const node = mmNewNode();
+  hit.p.children.splice(hit.p.children.indexOf(hit.n) + 1, 0, node);
+  MM.sel = node.id; mmSave(); mmRender();
+  mmStartEdit(node.id, 'end', null, true);
+}
+function mmRemove(id){
+  if (MM.edit) mmCommitEdit();
+  const hit = mmLocate(id); if (!hit || !hit.p) return;
+  mmSnap();
+  const sibs = hit.p.children, i = sibs.indexOf(hit.n);
+  sibs.splice(i, 1);
+  MM.sel = (sibs[i] || sibs[i - 1] || hit.p).id;
+  mmSave(); mmRender();
+}
+function mmToggleFold(id){
+  const hit = mmLocate(id); if (!hit || !hit.p || mmIsLeaf(hit.n)) return;
+  if (MM.edit) mmCommitEdit();
+  mmSnap();
+  if (hit.n.collapsed) delete hit.n.collapsed;
+  else { hit.n.collapsed = true; if (MM.sel && mmHas(hit.n, MM.sel)) MM.sel = id; }
+  mmSave(); mmRender();
+}
+function mmToggleTick(id){
+  const hit = mmLocate(id); if (!hit || !hit.p || !mmIsLeaf(hit.n)) return;
+  mmSnap();
+  if (hit.n.done) delete hit.n.done; else hit.n.done = true;
+  mmSave(); mmRender();
+}
+function mmMove(id, targetId, where){
+  const from = mmLocate(id), to = mmLocate(targetId);
+  if (!from || !to || !from.p || from.n === to.n || mmHas(from.n, targetId)) return false;
+  if (where !== 'in' && !to.p) return false;
+  mmSnap();
+  from.p.children.splice(from.p.children.indexOf(from.n), 1);
+  if (where === 'in'){ (to.n.children = to.n.children || []).push(from.n); delete to.n.done; delete to.n.collapsed; }
+  else { const sibs = to.p.children, at = sibs.indexOf(to.n); sibs.splice(where === 'before' ? at : at + 1, 0, from.n); }
+  mmSave();
+  return true;
+}
+
+/* ---- pointer: select, edit, tick, fold, drag a box ---- */
+const mmWorld = (cx, cy) => { const r = mmStage.getBoundingClientRect(); return { x: (cx - r.left - MM.view.tx) / MM.view.z, y: (cy - r.top - MM.view.ty) / MM.view.z }; };
 mmNodes.addEventListener('pointerdown', e=>{
-  if (MM.mode !== 'edit' || e.button !== 0 || e.target.closest('[data-act]')) return;
-  const el = e.target.closest('.mm-node'); if (!el || el.classList.contains('root')) return;
-  const txt = e.target.closest('.mm-txt');
-  if (txt && document.activeElement === txt) return;              // already typing here: let the caret and selection work
-  e.preventDefault();                                             // no text selection while dragging; a plain click focuses below
-  mmDrag = { id: el.dataset.id, el, x: e.clientX, y: e.clientY, moved: false, target: null, where: null };
+  if (e.button !== 0) return;
+  const el = e.target.closest('.mm-node'); if (!el || el.classList.contains('mm-ghost')) return;
+  e.stopPropagation();                                      // not a pan
+  if (e.target.closest('[data-act]')){ e.preventDefault(); return; }   // tick and knob work on click, never select
+  const id = el.dataset.id;
+  if (MM.edit && MM.edit.id === id && e.target.closest('.mm-txt')) return;    // placing the caret in the text being edited
+  e.preventDefault();
+  mmStopView();
+  MM.press = { id, x: e.clientX, y: e.clientY, wasSel: MM.sel === id && !MM.edit, el };
   el.setPointerCapture(e.pointerId);
 });
 mmNodes.addEventListener('pointermove', e=>{
-  const d = mmDrag; if (!d) return;
-  const dx = e.clientX - d.x, dy = e.clientY - d.y;
-  if (!d.moved){
-    if (Math.hypot(dx, dy) < 6) return;
-    d.moved = true; d.el.classList.add('dragging');
-    if (document.activeElement && mmNodes.contains(document.activeElement)) document.activeElement.blur();
+  const p = MM.press; if (!p) return;
+  if (!MM.drag){
+    if (Math.hypot(e.clientX - p.x, e.clientY - p.y) < 5 || p.id === MM.map.root.id) return;
+    mmDragStart(p);
   }
-  d.el.style.transform = `translate(${dx / MM.z}px, ${dy / MM.z}px)`;
-  if (d.target) d.target.classList.remove('drop-in', 'drop-before', 'drop-after');
-  d.target = null; d.where = null;
-  const under = document.elementFromPoint(e.clientX, e.clientY);
-  const tel = under && under.closest && under.closest('.mm-node');
-  if (!tel || tel === d.el) return;
-  const moving = mmLocate(d.id).n;
-  if (mmHas(moving, tel.dataset.id)) return;                      // never into its own branch
-  const r = tel.getBoundingClientRect(), f = (e.clientY - r.top) / r.height;
-  d.where = tel.classList.contains('root') ? 'in' : f < 0.28 ? 'before' : f > 0.72 ? 'after' : 'in';
-  d.target = tel; tel.classList.add('drop-' + d.where);
+  mmDragMove(e);
 });
-function mmDrop(e){
-  const d = mmDrag; if (!d) return;
-  mmDrag = null;
-  if (!d.moved){ mmFocus(d.id, e.clientX, e.clientY); return; }   // it was a click: start typing where it landed
-  d.el.classList.remove('dragging'); d.el.style.transform = '';
-  if (d.target) d.target.classList.remove('drop-in', 'drop-before', 'drop-after');
-  if (!d.target) return;
-  const from = mmLocate(d.id), to = mmLocate(d.target.dataset.id);
-  if (!from || !to || from.n === to.n) return;
-  mmSnap();
-  from.p.children.splice(from.p.children.indexOf(from.n), 1);
-  if (d.where === 'in'){
-    (to.n.children = to.n.children || []).push(from.n);
-    delete to.n.done; delete to.n.collapsed;
-  } else {
-    const at = to.p.children.indexOf(to.n);
-    to.p.children.splice(d.where === 'before' ? at : at + 1, 0, from.n);
-  }
-  mmSave(); mmRender();
-}
-mmNodes.addEventListener('pointerup', mmDrop);
-mmNodes.addEventListener('pointercancel', ()=>{ if (mmDrag){ mmDrag.el.classList.remove('dragging'); mmDrag.el.style.transform = ''; mmDrag = null; mmRender(); } });
+mmNodes.addEventListener('pointerup', e=>{
+  const p = MM.press; if (!p) return;
+  MM.press = null;
+  if (MM.drag) return mmDragEnd();
+  if (p.wasSel) mmStartEdit(p.id, 'end');                   // a second click edits
+  else mmSelect(p.id);
+});
+mmNodes.addEventListener('pointercancel', ()=>{ MM.press = null; if (MM.drag){ MM.drag.target = null; mmDragEnd(); } });
+mmNodes.addEventListener('dblclick', e=>{
+  const el = e.target.closest('.mm-node'); if (!el || e.target.closest('[data-act]') || el.classList.contains('mm-ghost')) return;
+  mmStartEdit(el.dataset.id, 'end');
+});
+mmNodes.addEventListener('click', e=>{
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const id = b.closest('.mm-node').dataset.id;
+  if (b.dataset.act === 'tick') mmToggleTick(id);
+  else if (b.dataset.act === 'fold') mmToggleFold(id);
+});
 
-document.querySelectorAll('.mm-modes button').forEach(b => b.addEventListener('click', ()=>{
-  MM.mode = b.dataset.mode; mmRender(MM.mode === 'edit' && !MM.map.root.text ? MM.map.root.id : null);
-}));
+function mmDragStart(p){
+  if (MM.edit) mmCommitEdit();
+  const hit = mmLocate(p.id), r = MM.L[p.id];
+  const ids = new Set(); mmWalk(hit.n, n => ids.add(n.id));
+  const w = mmWorld(p.x, p.y);
+  MM.sel = p.id;
+  MM.drag = { id: p.id, ids, w: r.w, h: r.h, br: MM.br[p.id] || 0, gx: w.x - r.x, gy: w.y - r.y, target: null, where: null };
+  const el = MM.els.get(p.id);
+  el.classList.add('lift', 'sel');
+  mmRender();                                               // its old place closes up
+}
+function mmDragMove(e){
+  const d = MM.drag, w = mmWorld(e.clientX, e.clientY);
+  MM.els.get(d.id).style.transform = `translate(${f1(w.x - d.gx)}px, ${f1(w.y - d.gy)}px) scale(1.04)`;
+  // aim at the current layout; over the placeholder itself, keep the current aim (no flicker)
+  const ph = MM.L.__ph;
+  if (ph && w.x >= ph.x - 4 && w.x <= ph.x + ph.w + 4 && w.y >= ph.y - 4 && w.y <= ph.y + ph.h + 4) return;
+  let target = null, where = null;
+  for (const v of MM.list){
+    if (d.ids.has(v.id)) continue;
+    const r = MM.L[v.id]; if (!r) continue;
+    if (w.x >= r.x - 6 && w.x <= r.x + r.w + 6 && w.y >= r.y - 6 && w.y <= r.y + r.h + 6){
+      const f = (w.y - r.y) / r.h;
+      target = v.id; where = r.depth === 0 ? 'in' : f < .3 ? 'before' : f > .7 ? 'after' : 'in';
+      break;
+    }
+  }
+  if (target !== d.target || where !== d.where){ d.target = target; d.where = where; mmRender(); }
+}
+function mmDragEnd(){
+  const d = MM.drag; MM.drag = null;
+  const el = MM.els.get(d.id); if (el) el.classList.remove('lift');
+  // its children regrow from it at the new place
+  d.ids.forEach(id => {
+    if (id === d.id) return;
+    const n = MM.els.get(id); if (n){ n.remove(); MM.els.delete(id); }
+  });
+  d.ids.forEach(id => { const path = MM.paths.get(id); if (path){ path.remove(); MM.paths.delete(id); } });
+  if (d.target) mmMove(d.id, d.target, d.where);
+  mmRender();
+}
+
+/* ---- moving around: smooth zoom on the cursor, a pan that coasts, an animated Fit ---- */
+function mmApplyView(){
+  mmCanvas.style.transform = `translate(${MM.view.tx}px, ${MM.view.ty}px) scale(${MM.view.z})`;
+  if (mmTools.classList.contains('on')) mmPlaceTools(true);
+}
+function mmStopView(){ cancelAnimationFrame(MM.anim); MM.anim = 0; }
+function mmViewTo(z, tx, ty, animate){
+  mmStopView();
+  if (!animate || reducedMotion.matches){ Object.assign(MM.view, { z, tx, ty }); return mmApplyView(); }
+  const from = { ...MM.view }, t0 = performance.now(), dur = 380;
+  const step = now => {
+    const k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+    MM.view.z = from.z + (z - from.z) * e; MM.view.tx = from.tx + (tx - from.tx) * e; MM.view.ty = from.ty + (ty - from.ty) * e;
+    mmApplyView();
+    MM.anim = k < 1 ? requestAnimationFrame(step) : 0;
+  };
+  MM.anim = requestAnimationFrame(step);
+}
+function mmFit(animate){
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  MM.list.forEach(v => { const r = MM.L[v.id]; if (!r) return;
+    x0 = Math.min(x0, r.x - 22); x1 = Math.max(x1, r.x + r.w + 22); y0 = Math.min(y0, r.y); y1 = Math.max(y1, r.y + r.h); });
+  if (!isFinite(x0)) return;
+  const W = mmStage.clientWidth, H = mmStage.clientHeight, pad = 64;
+  const z = Math.max(.35, Math.min(1.5, (W - pad * 2) / (x1 - x0), (H - pad * 2 - 24) / (y1 - y0)));
+  mmViewTo(z, W / 2 - z * (x0 + x1) / 2, (H - 24) / 2 - z * (y0 + y1) / 2, animate);
+}
+mmStage.addEventListener('pointerdown', e=>{
+  if (e.button !== 0 || e.target.closest('.mm-node, .mm-tools')) return;
+  mmStopView();
+  MM.pan = { x: e.clientX, y: e.clientY, tx: MM.view.tx, ty: MM.view.ty, moved: false, pts: [{ t: performance.now(), x: e.clientX, y: e.clientY }] };
+  mmStage.setPointerCapture(e.pointerId);
+});
+mmStage.addEventListener('pointermove', e=>{
+  const p = MM.pan; if (!p) return;
+  if (!p.moved && Math.hypot(e.clientX - p.x, e.clientY - p.y) < 4) return;
+  if (!p.moved){ p.moved = true; mmStage.classList.add('panning'); }
+  MM.view.tx = p.tx + e.clientX - p.x; MM.view.ty = p.ty + e.clientY - p.y; mmApplyView();
+  p.pts.push({ t: performance.now(), x: e.clientX, y: e.clientY }); if (p.pts.length > 6) p.pts.shift();
+});
+mmStage.addEventListener('pointerup', ()=>{
+  const p = MM.pan; if (!p) return;
+  MM.pan = null; mmStage.classList.remove('panning');
+  if (!p.moved){ if (MM.edit) mmCommitEdit(); mmSelect(null); return; }      // a click on empty canvas
+  // let go while moving: coast to a stop
+  const a = p.pts[0], b = p.pts[p.pts.length - 1], dt = b.t - a.t;
+  if (reducedMotion.matches || dt <= 0 || performance.now() - b.t > 60) return;
+  let vx = (b.x - a.x) / dt, vy = (b.y - a.y) / dt, last = performance.now();
+  const coast = now => {
+    const step = now - last; last = now;
+    MM.view.tx += vx * step; MM.view.ty += vy * step; mmApplyView();
+    const k = Math.pow(.92, step / 16); vx *= k; vy *= k;
+    MM.anim = Math.hypot(vx, vy) > .02 ? requestAnimationFrame(coast) : 0;
+  };
+  MM.anim = requestAnimationFrame(coast);
+});
+mmStage.addEventListener('wheel', e=>{
+  e.preventDefault();
+  const r = mmStage.getBoundingClientRect(), px = e.clientX - r.left, py = e.clientY - r.top;
+  const wx = (px - MM.view.tx) / MM.view.z, wy = (py - MM.view.ty) / MM.view.z;      // the point under the cursor stays put
+  MM.zTarget = Math.max(.35, Math.min(2.2, (MM.anim && MM.zTarget ? MM.zTarget : MM.view.z) * Math.pow(1.0015, -e.deltaY)));
+  if (reducedMotion.matches){ MM.view.z = MM.zTarget; MM.view.tx = px - wx * MM.view.z; MM.view.ty = py - wy * MM.view.z; return mmApplyView(); }
+  cancelAnimationFrame(MM.anim);
+  const zoom = () => {
+    MM.view.z += (MM.zTarget - MM.view.z) * .28;
+    if (Math.abs(MM.zTarget - MM.view.z) < .0008) MM.view.z = MM.zTarget;
+    MM.view.tx = px - wx * MM.view.z; MM.view.ty = py - wy * MM.view.z; mmApplyView();
+    MM.anim = MM.view.z !== MM.zTarget ? requestAnimationFrame(zoom) : 0;
+  };
+  MM.anim = requestAnimationFrame(zoom);
+}, { passive:false });
+document.getElementById('mmFit').addEventListener('click', () => mmFit(true));
+
+/* ---- keyboard ---- */
+function mmNav(key){
+  const cur = MM.L[MM.sel], hit = mmLocate(MM.sel); if (!cur || !hit) return;
+  const shown = MM.list.filter(v => MM.L[v.id]);
+  let next = null;
+  if (key === 'ArrowUp' || key === 'ArrowDown'){
+    if (!hit.p) return;
+    const pid = MM.parent[MM.sel];
+    const sibs = shown.filter(v => MM.parent[v.id] === pid && MM.L[v.id].side === cur.side).sort((a, b) => MM.L[a.id].ay - MM.L[b.id].ay);
+    const i = sibs.findIndex(v => v.id === MM.sel);
+    next = sibs[key === 'ArrowUp' ? i - 1 : i + 1];
+  } else {
+    const dir = key === 'ArrowRight' ? 1 : -1;
+    if (!hit.p || dir === cur.side){                        // outward: the nearest child on that side
+      const kids = shown.filter(v => MM.parent[v.id] === MM.sel && MM.L[v.id].side === (hit.p ? cur.side : dir));
+      next = kids.sort((a, b) => Math.abs(MM.L[a.id].ay - cur.ay) - Math.abs(MM.L[b.id].ay - cur.ay))[0];
+    } else next = { id: MM.parent[MM.sel] };                 // inward: the parent
+  }
+  if (next && next.id) mmSelect(next.id);
+}
+document.addEventListener('keydown', e=>{
+  if (!mmEl.classList.contains('on')) return;
+  if (e.target.closest && e.target.closest('select')) return;           // the deadline dropdown keeps its keys
+  const k = e.key, mod = e.ctrlKey || e.metaKey;
+  if (mod && (k.toLowerCase() === 'z' || k.toLowerCase() === 'y')){       // undo / redo for the whole map
+    e.preventDefault(); e.stopImmediatePropagation();
+    if (MM.edit) mmCommitEdit();
+    const redo = k.toLowerCase() === 'y' || e.shiftKey;
+    if (!(redo ? mmRestore(MM.fut, MM.hist) : mmRestore(MM.hist, MM.fut))) toast(redo ? 'Nothing to redo' : 'Nothing to undo');
+    return;
+  }
+  if (MM.edit){
+    if (k === 'Escape'){ e.preventDefault(); e.stopImmediatePropagation(); mmCancelEdit(); }
+    else if (k === 'Enter' && !e.shiftKey){ e.preventDefault(); mmCommitEdit(); }
+    else if (k === 'Enter'){ e.preventDefault(); const id = MM.edit.id; mmCommitEdit(); mmAddSibling(id); }
+    else if (k === 'Tab'){ e.preventDefault(); const id = MM.edit.id; mmCommitEdit(); mmAddChild(id); }
+    return;                                                 // everything else types
+  }
+  if (k === 'Escape'){
+    e.preventDefault(); e.stopImmediatePropagation();
+    if (MM.sel) mmSelect(null); else closeMindmap();
+    return;
+  }
+  if (mod || e.altKey) return;
+  const id = MM.sel;
+  if (!id){ if (k.startsWith('Arrow')){ e.preventDefault(); mmSelect(MM.map.root.id); } return; }
+  const hit = mmLocate(id); if (!hit) return;
+  if (k === 'Enter' && e.shiftKey){ e.preventDefault(); mmAddSibling(id); }
+  else if (k === 'Enter' || k === 'F2'){ e.preventDefault(); mmStartEdit(id, 'end'); }
+  else if (k === 'Tab'){ e.preventDefault(); mmAddChild(id); }
+  else if (k === 'Delete'){ e.preventDefault(); mmRemove(id); }
+  else if (k === 'Backspace'){
+    e.preventDefault();
+    if (!hit.n.text && hit.p && mmIsLeaf(hit.n)) mmRemove(id);
+    else mmStartEdit(id, 'replace', '');
+  }
+  else if (k.startsWith('Arrow')){ e.preventDefault(); mmNav(k); }
+  else if (k.length === 1){ e.preventDefault(); mmStartEdit(id, 'replace', k); }   // typing replaces, like a spreadsheet cell
+}, true);
 
 /* ---- the linked deadline ---- */
 function mmDeadlineOptions(){
@@ -4030,6 +4497,7 @@ function mmDeadlineOptions(){
     `<option value="${d.id}"${d.id === cur ? ' selected' : ''}>${escHtml(d.title)} · ${dlShort(d.due)}</option>`).join('');
 }
 document.getElementById('mmDeadline').addEventListener('change', e=>{
+  if (MM.edit) mmCommitEdit();
   mmSnap();
   const v = e.target.value;
   if (v){
@@ -4041,60 +4509,59 @@ document.getElementById('mmDeadline').addEventListener('change', e=>{
   mmSave(); mmRender(); renderDeadlines();
 });
 
-
 /* ---- opening, closing, deleting ---- */
+function mmClearStage(){
+  [...MM.ghosts.values()].forEach(el => clearTimeout(el._t));
+  [...MM.pathGhosts.values()].forEach(p => clearTimeout(p._t));
+  MM.els.clear(); MM.ghosts.clear(); MM.paths.clear(); MM.pathGhosts.clear(); MM.phEl = null;
+  mmNodes.innerHTML = ''; mmLines.innerHTML = '';
+  MM.L = {}; MM.parent = {}; MM.br = {}; MM.list = []; MM.faded = new Set();
+}
 function openMindmap(id, mode){
   MM.map = mmFind(id); if (!MM.map) return;
-  MM.mode = mode || 'view'; MM.pos = {}; MM.sizes = {}; MM.hist = []; MM.fut = [];
+  mmStopView(); mmClearStage();
+  MM.sel = null; MM.edit = null; MM.drag = null; MM.press = null; MM.pan = null; MM.hist = []; MM.fut = [];
   mmDeadlineOptions();
   const del = document.getElementById('mmDel'); del.classList.remove('arm'); del.textContent = 'Delete map';
+  mmEl.classList.add('mm-nomotion');
   mmScrim.classList.add('on'); mmEl.classList.add('on');
   document.body.style.overflow = 'hidden';
-  mmRender(MM.mode === 'edit' && !MM.map.root.text ? MM.map.root.id : null);
-  mmFit();
+  mmRender();
+  MM.faded = new Set(MM.list.filter(v => { const el = MM.els.get(v.id); return el.classList.contains('done') || el.classList.contains('dim'); }).map(v => v.id));
+  mmFit(false);
+  mmStage.focus({ preventScroll:true });
+  requestAnimationFrame(() => requestAnimationFrame(() => mmEl.classList.remove('mm-nomotion')));
+  if (mode === 'new') mmStartEdit(MM.map.root.id, 'end');   // a new map starts by naming it
 }
 function closeMindmap(){
   if (!MM.map) return;
-  clearTimeout(MM.saveT);
-  if (document.activeElement && mmEl.contains(document.activeElement)) document.activeElement.blur();
+  if (MM.edit) mmCommitEdit();
+  clearTimeout(MM.saveT); mmStopView();
   // a map closed before anything was written is just discarded
   if (!MM.map.root.text.trim() && mmIsLeaf(MM.map.root)) DB[MM_KEY] = mmAll().filter(m => m !== MM.map);
   save();
-  mmScrim.classList.remove('on'); mmEl.classList.remove('on');
+  mmScrim.classList.remove('on'); mmEl.classList.remove('on'); mmTools.classList.remove('on');
   if (!sheet.classList.contains('on')) document.body.style.overflow = '';
-  MM.map = null;
+  MM.map = null; MM.sel = null; MM.drag = null; MM.press = null;
+  setTimeout(() => { if (!MM.map) mmClearStage(); }, 360);
   renderDeadlines();
 }
 document.getElementById('mmNew').addEventListener('click', ()=>{
   const m = { id: mmUid(), root: { id: mmUid(), text:'', children:[] }, updated: nowStamp() };
   mmWrite().unshift(m);
-  openMindmap(m.id, 'edit');
+  openMindmap(m.id, 'new');
 });
 document.getElementById('mmClose').addEventListener('click', closeMindmap);
 mmScrim.addEventListener('click', closeMindmap);
 document.getElementById('mmDel').addEventListener('click', e=>{
   const b = e.currentTarget;
   if (!b.classList.contains('arm')){ b.classList.add('arm'); b.textContent = 'Tap again to delete'; return; }
+  if (MM.edit){ MM.edit = null; }
   DB[MM_KEY] = mmAll().filter(m => m !== MM.map);
-  MM.map.root.text = '';                               // already gone — nothing for closeMindmap to keep
+  MM.map.root.text = '';                                    // already gone — nothing for closeMindmap to keep
   closeMindmap(); toast('Mind map deleted');
 });
-document.addEventListener('keydown', e=>{
-  if (!mmEl.classList.contains('on')) return;
-  const k = e.key.toLowerCase();
-  if ((e.ctrlKey || e.metaKey) && (k === 'z' || k === 'y')){          // undo / redo for the whole map
-    e.preventDefault(); e.stopImmediatePropagation();
-    clearTimeout(MM.saveT); MM.typing = false;
-    const redo = k === 'y' || e.shiftKey;
-    if (!(redo ? mmRestore(MM.fut, MM.hist) : mmRestore(MM.hist, MM.fut))) toast(redo ? 'Nothing to redo' : 'Nothing to undo');
-    return;
-  }
-  if (e.key !== 'Escape') return;
-  e.stopImmediatePropagation();
-  if (document.activeElement && mmNodes.contains(document.activeElement)) document.activeElement.blur();   // first Escape stops editing
-  else closeMindmap();
-}, true);
-window.addEventListener('resize', ()=>{ if (MM.map) mmFit(); });
+window.addEventListener('resize', ()=>{ if (MM.map) mmFit(false); });
 
 /* ============================================================
    DAY SHEET

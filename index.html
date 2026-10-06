@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>/* the theme, before the first paint (the log's preference is mirrored here) */
+try { var t = localStorage.getItem('monthlyPlan.theme');
+  if (t === 'dark' || (t === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)) document.documentElement.dataset.theme = 'dark'; } catch (e) {}
+</script>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Monthly Plan</title>
@@ -34,6 +38,11 @@
 
   --water:     #7FA3B5;
   --water-soft:#E4EDF1;
+
+  /* the same meaning everywhere, so one name can carry both themes */
+  --good-ink:  #5C7A4C;  --mid-ink:  #9A7530;  --bad-ink:  #A9614F;  --gold: #8A6420;
+  --good-line: #D6E2CB;  --mid-line: #E9DCC2;  --bad-line: #EBD3CB;
+  --hover:     #EFE7D9;  --on-ink:   #F7F2E8;   /* text sitting on an --ink background */
 
   --shadow-sm: 0 1px 2px rgba(74,65,55,.06), 0 2px 6px rgba(74,65,55,.05);
   --shadow-md: 0 2px 6px rgba(74,65,55,.07), 0 10px 26px rgba(74,65,55,.09);
@@ -112,7 +121,7 @@ body.cal-view .app{ width:max-content; max-width:100%; }
 .rankbar.rA .rk{ background:var(--good); }
 .rankbar.rS .rk{ background:linear-gradient(160deg,#D9B25E,#A9762C); box-shadow:0 0 0 2px rgba(217,178,94,.28), inset 0 -1px 3px rgba(74,65,55,.3); }
 .rankbar.rS .xp i{ background:#A9762C; }
-.rankbar.risk{ border-color:#EBD3CB; background:var(--bad-soft); }
+.rankbar.risk{ border-color:var(--bad-line); background:var(--bad-soft); }
 .rankbar.risk .rk{ animation:riskPulse 1.9s var(--ease) infinite; }
 @keyframes riskPulse{ 0%,100%{ box-shadow:0 0 0 0 rgba(192,122,105,.5);} 55%{ box-shadow:0 0 0 5px rgba(192,122,105,0);} }
 .rankbar.unranked .rk{ background:var(--bg-warm); color:var(--ink-3); box-shadow:none; }
@@ -126,13 +135,13 @@ body.cal-view .app{ width:max-content; max-width:100%; }
 .titlechip .tnm{ display:flex; flex-direction:column; gap:2px; font-size:12.5px; font-weight:650; line-height:1.1; white-space:nowrap; }
 .titlechip .tnm em{ font-style:normal; font-size:10.5px; font-weight:550; color:var(--ink-3); font-variant-numeric:tabular-nums; }
 .titlechip.t-gold{ border-color:#E0CB98; background:linear-gradient(180deg,#FBF4E2,#F6EBD2); }
-.titlechip.t-gold .tico, .titlechip.t-gold .tnm{ color:#8A6420; }
-.titlechip.t-good{ border-color:#D6E2CB; background:var(--good-soft); }
-.titlechip.t-good .tico, .titlechip.t-good .tnm{ color:#4F6B3F; }
-.titlechip.t-mid{ border-color:#E9DCC2; background:var(--mid-soft); }
-.titlechip.t-mid .tico, .titlechip.t-mid .tnm{ color:#8A6A2E; }
-.titlechip.t-bad{ border-color:#EBD3CB; background:var(--bad-soft); }
-.titlechip.t-bad .tico, .titlechip.t-bad .tnm{ color:#9B5341; }
+.titlechip.t-gold .tico, .titlechip.t-gold .tnm{ color:var(--gold); }
+.titlechip.t-good{ border-color:var(--good-line); background:var(--good-soft); }
+.titlechip.t-good .tico, .titlechip.t-good .tnm{ color:var(--good-ink); }
+.titlechip.t-mid{ border-color:var(--mid-line); background:var(--mid-soft); }
+.titlechip.t-mid .tico, .titlechip.t-mid .tnm{ color:var(--mid-ink); }
+.titlechip.t-bad{ border-color:var(--bad-line); background:var(--bad-soft); }
+.titlechip.t-bad .tico, .titlechip.t-bad .tnm{ color:var(--bad-ink); }
 .titlechip.none .tnm{ color:var(--ink-3); font-weight:600; }
 .titlebar{ display:flex; align-items:center; gap:7px; flex:none; }
 .titlechip.more-chip{ padding:5px 12px; font-size:12px; font-weight:700; color:var(--ink-3); letter-spacing:.02em; }
@@ -152,9 +161,9 @@ body.cal-view .app{ width:max-content; max-width:100%; }
 .ibox{ margin:14px 20px 0; padding:15px 16px; border-radius:var(--r-md); background:var(--surface-2); border:1px solid var(--line); }
 .ibox h4{ margin:0 0 10px; font-size:11px; font-weight:700; letter-spacing:.11em; text-transform:uppercase; color:var(--ink-3); }
 .ibox p{ margin:11px 0 0; font-size:13px; line-height:1.5; color:var(--ink-2); }
-.ibox p.warn{ color:#9B5341; } .ibox p.good{ color:#4F6B3F; }
+.ibox p.warn{ color:var(--bad-ink); } .ibox p.good{ color:var(--good-ink); }
 .ibox p b{ font-weight:650; color:var(--ink); }
-.ibox p.warn b{ color:#9B5341; } .ibox p.good b{ color:#4F6B3F; }
+.ibox p.warn b{ color:var(--bad-ink); } .ibox p.good b{ color:var(--good-ink); }
 /* --- monthly income & card drawer --- */
 .ibox .big-add-row{ flex-wrap:wrap; }
 .ibox .big-note{ min-width:120px; }
@@ -176,7 +185,7 @@ body.cal-view .app{ width:max-content; max-width:100%; }
 .fin-tile .k{ font-size:10.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-3); }
 .fin-tile .v{ margin-top:4px; font-size:16px; font-weight:700; letter-spacing:-.01em; color:var(--ink); font-variant-numeric:tabular-nums;
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.fin-tile .v.pos{ color:#5C7A4C; } .fin-tile .v.neg{ color:#A9614F; }
+.fin-tile .v.pos{ color:var(--good-ink); } .fin-tile .v.neg{ color:var(--bad-ink); }
 @media (max-width:480px){ .fin-tiles{ grid-template-columns:1fr; } }
 /* stacked "where it went" bar — 2px surface gaps between segments */
 .fin-stack{ display:flex; gap:2px; height:14px; border-radius:4px; overflow:hidden; background:var(--bg-warm); }
@@ -193,7 +202,7 @@ body.cal-view .app{ width:max-content; max-width:100%; }
 .stmt .d{ width:44px; flex:none; color:var(--ink-3); font-variant-numeric:tabular-nums; }
 .stmt .n{ flex:1; min-width:0; color:var(--ink-2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .stmt .a{ flex:none; font-weight:650; color:var(--ink); font-variant-numeric:tabular-nums; }
-.stmt .a.in{ color:#5C7A4C; }
+.stmt .a.in{ color:var(--good-ink); }
 .fd-total{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
 .fd-total span{ font-size:12.5px; color:var(--ink-2); }
 .fd-total b{ font-size:22px; font-weight:700; letter-spacing:-.02em; color:var(--ink); font-variant-numeric:tabular-nums; }
@@ -227,7 +236,7 @@ body.cal-view .app{ width:max-content; max-width:100%; }
 .lrow .ln em{ display:block; font-style:normal; font-size:10.5px; font-weight:550; color:var(--ink-3); }
 .lrow .lv{ font-variant-numeric:tabular-nums; font-size:11.5px; flex:none; }
 .lrow .lhere{ flex:none; font-size:9.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
-  padding:3px 7px; border-radius:99px; background:var(--ink); color:#F7F2E8; }
+  padding:3px 7px; border-radius:99px; background:var(--ink); color:var(--on-ink); }
 
 .irules{ margin:0; padding-left:17px; }
 .irules li{ font-size:12.5px; line-height:1.5; color:var(--ink-2); margin-bottom:7px; }
@@ -298,11 +307,11 @@ body.cal-view .app{ width:max-content; max-width:100%; }
   border:1px solid var(--line); background:var(--surface-2); color:var(--ink-2);
   transition:transform .22s var(--spring), background .22s var(--ease), color .22s var(--ease), opacity .2s;
 }
-.nav-btn:hover:not(:disabled){ background:#EFE7D9; color:var(--ink); transform:scale(1.09); }
+.nav-btn:hover:not(:disabled){ background:var(--hover); color:var(--ink); transform:scale(1.09); }
 .nav-btn:active:not(:disabled){ transform:scale(.92); }
 .nav-btn:disabled{ opacity:.28; cursor:default; }
 .today-btn{ padding:6px 14px; border-radius:999px; border:1px solid var(--line); background:var(--surface-2); font-size:12.5px; font-weight:550; color:var(--ink-2); transition:background .22s var(--ease), transform .22s var(--spring); }
-.today-btn:hover{ background:#EFE7D9; color:var(--ink); }
+.today-btn:hover{ background:var(--hover); color:var(--ink); }
 .today-btn:active{ transform:scale(.95); }
 
 .dow, .grid{
@@ -333,7 +342,7 @@ body.cal-view .app{ width:max-content; max-width:100%; }
 }
 
 .day.open{ background:var(--surface-2); border-color:var(--line); cursor:pointer; box-shadow:var(--shadow-sm); }
-.day.open:hover{ background:#F1E9DA; transform:translateY(-2px) scale(1.04); box-shadow:var(--shadow-md); }
+.day.open:hover{ background:var(--hover); transform:translateY(-2px) scale(1.04); box-shadow:var(--shadow-md); }
 .day.open:active{ transform:scale(.96); }
 
 .day.future{ background:transparent; border-color:transparent; cursor:default; }
@@ -430,7 +439,7 @@ body.cal-view .app{ width:max-content; max-width:100%; }
 .pg-sum .fact{ font-size:11.5px; color:var(--ink-2); padding:2px 8px; border-radius:99px; background:var(--surface-2); border:1px solid var(--line); }
 .pg-open{ font-size:11px; font-weight:600; color:var(--ink-2); padding:3px 9px; border-radius:99px;
   border:1px solid var(--line); background:var(--surface); transition:background .2s; }
-.pg-open:hover{ background:#EFE7D9; color:var(--ink); }
+.pg-open:hover{ background:var(--hover); color:var(--ink); }
 
 .jr-pager{ display:flex; align-items:center; gap:12px; margin-top:20px; }
 .jr-pager .lbl{ min-width:120px; text-align:center; font-size:12px; color:var(--ink-3); font-variant-numeric:tabular-nums; }
@@ -469,7 +478,7 @@ body.cal-view .app{ width:max-content; max-width:100%; }
 .sheet-head h2{ margin:2px 0 0; font-size:19px; font-weight:650; letter-spacing:-.02em; }
 .sheet-head .meta{ font-size:12.5px; color:var(--ink-3); margin-top:3px; }
 .x-btn{ margin-left:auto; width:32px; height:32px; border-radius:50%; display:grid; place-items:center; background:var(--surface-2); border:1px solid var(--line); color:var(--ink-2); transition:transform .22s var(--spring), background .2s; flex:none; }
-.x-btn:hover{ background:#EDE4D4; transform:rotate(90deg); }
+.x-btn:hover{ background:var(--hover); transform:rotate(90deg); }
 
 /* Day sheet header: kicker + date on the left, score + zone tag on the same line
    at the right, bar underneath — two lines of height instead of four. */
@@ -485,10 +494,10 @@ body.cal-view .app{ width:max-content; max-width:100%; }
 .score-top .num{ font-size:25px; font-weight:700; letter-spacing:-.03em; font-variant-numeric:tabular-nums; transition:color .4s var(--ease); }
 .score-top .of{ font-size:13px; color:var(--ink-3); }
 .score-top .tag{ margin-left:6px; align-self:center; font-size:10.5px; font-weight:650; letter-spacing:.08em; text-transform:uppercase; padding:4px 9px; border-radius:99px; }
-.tag.g{ background:var(--good-soft); color:#5C7A4C; }
-.tag.m{ background:var(--mid-soft); color:#9A7530; }
-.tag.b{ background:var(--bad-soft); color:#9E5544; }
-.tag.p{ background:#EFE7D9; color:var(--ink-2); }
+.tag.g{ background:var(--good-soft); color:var(--good-ink); }
+.tag.m{ background:var(--mid-soft); color:var(--mid-ink); }
+.tag.b{ background:var(--bad-soft); color:var(--bad-ink); }
+.tag.p{ background:var(--hover); color:var(--ink-2); }
 
 .track{ height:9px; border-radius:99px; background:var(--bg-warm); overflow:hidden; position:relative; }
 .track .zones{ position:absolute; inset:0; display:flex; opacity:.5; }
@@ -549,8 +558,8 @@ body.cal-view .app{ width:max-content; max-width:100%; }
 .item.done .txt span::after{ transform:scaleX(1); }
 
 .item .pts{ flex:none; font-size:11.5px; font-weight:650; font-variant-numeric:tabular-nums; color:var(--ink-3); background:var(--surface-2); border:1px solid var(--line); padding:2px 7px; border-radius:99px; transition:all .3s var(--ease); }
-.item.done .pts{ color:#5C7A4C; background:var(--good-soft); border-color:#D6E2CB; }
-.item.miss .pts{ color:#A9614F; background:var(--bad-soft); border-color:#EBD3CB; }
+.item.done .pts{ color:var(--good-ink); background:var(--good-soft); border-color:var(--good-line); }
+.item.miss .pts{ color:var(--bad-ink); background:var(--bad-soft); border-color:var(--bad-line); }
 
 .item.locked{ opacity:.72; }
 /* a task that didn't exist yet on this day (added mid-run) — present but inert */
@@ -572,8 +581,8 @@ body.cal-view .app{ width:max-content; max-width:100%; }
 .tracker .hd .ico{ font-size:16px; }
 .tracker .hd .nm{ font-size:14.5px; font-weight:550; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .tracker .hd .pts{ margin-left:auto; font-size:11.5px; font-weight:650; font-variant-numeric:tabular-nums; padding:2px 7px; border-radius:99px; border:1px solid var(--line); background:var(--surface); color:var(--ink-3); transition:all .3s var(--ease); }
-.tracker .hd .pts.g{ color:#5C7A4C; background:var(--good-soft); border-color:#D6E2CB; }
-.tracker .hd .pts.b{ color:#A9614F; background:var(--bad-soft); border-color:#EBD3CB; }
+.tracker .hd .pts.g{ color:var(--good-ink); background:var(--good-soft); border-color:var(--good-line); }
+.tracker .hd .pts.b{ color:var(--bad-ink); background:var(--bad-soft); border-color:var(--bad-line); }
 .tracker .hd .unit{ flex:none; font-size:11px; font-weight:600; color:var(--ink-3); margin-left:-4px; }
 
 /* Water is one row: total · add field · bottles · points. Bottles fill fractionally. */
@@ -599,7 +608,7 @@ body.cal-view .app{ width:max-content; max-width:100%; }
 .money-input:focus{ border-color:var(--ink-3); box-shadow:0 0 0 3px rgba(166,152,127,.14); outline:none; }
 .money-input::-webkit-outer-spin-button,.money-input::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
 .money-vs{ flex:none; font-size:11.5px; font-weight:650; white-space:nowrap; font-variant-numeric:tabular-nums; transition:color .3s; }
-.money-vs.under{ color:#5C7A4C; } .money-vs.over{ color:#A9614F; }
+.money-vs.under{ color:var(--good-ink); } .money-vs.over{ color:var(--bad-ink); }
 /* The gauge sits on the card's bottom edge, so it animates without owning a row. */
 .money-gauge{ position:absolute; left:0; right:0; bottom:0; height:4px; overflow:hidden;
   background:var(--bg-warm); border-radius:0 0 var(--r-md) var(--r-md); }
@@ -614,7 +623,7 @@ body.cal-view .app{ width:max-content; max-width:100%; }
   transition:transform .22s var(--spring), background .2s, color .2s, border-color .2s; }
 .big-toggle:hover{ background:var(--water-soft); border-color:#BFD3DC; color:#4E7385; }
 .big-toggle:active{ transform:scale(.86); }
-.big-toggle.on{ background:var(--ink); border-color:var(--ink); color:#F7F2E8; transform:rotate(45deg); }
+.big-toggle.on{ background:var(--ink); border-color:var(--ink); color:var(--on-ink); transform:rotate(45deg); }
 
 .big-month-note{ font-size:11px; color:var(--ink-3); margin-top:6px; font-variant-numeric:tabular-nums; }
 .big-month-note[hidden]{ display:none; }
@@ -626,7 +635,7 @@ body.cal-view .app{ width:max-content; max-width:100%; }
 .big-note{ flex:1; min-width:0; padding:5px 8px; border-radius:var(--r-sm); border:1px solid var(--line-2); background:var(--surface); font-size:13px; }
 .big-date{ flex:none; padding:5px 8px; border-radius:var(--r-sm); border:1px solid var(--line-2); background:var(--surface); font-size:12.5px; color:var(--ink); }
 .big-amt:focus,.big-note:focus,.big-date:focus{ border-color:var(--ink-3); box-shadow:0 0 0 3px rgba(166,152,127,.14); outline:none; }
-.big-save{ flex:none; padding:6px 12px; border-radius:99px; background:var(--ink); color:#F7F2E8; font-size:12px; font-weight:600; transition:opacity .2s, transform .22s var(--spring); }
+.big-save{ flex:none; padding:6px 12px; border-radius:99px; background:var(--ink); color:var(--on-ink); font-size:12px; font-weight:600; transition:opacity .2s, transform .22s var(--spring); }
 .big-save:hover{ opacity:.88; } .big-save:active{ transform:scale(.94); }
 .big-cancel{ flex:none; width:24px; height:24px; border-radius:50%; display:grid; place-items:center; color:var(--ink-3); transition:background .2s, color .2s; }
 .big-cancel:hover{ background:var(--surface-2); color:var(--ink); }
@@ -643,7 +652,7 @@ body.cal-view .app{ width:max-content; max-width:100%; }
 .big-item .bi-date{ flex:none; width:44px; color:var(--ink-3); font-variant-numeric:tabular-nums; }
 .big-item .bi-amt{ flex:none; font-weight:650; font-variant-numeric:tabular-nums; color:var(--ink); }
 .big-item .bi-del{ flex:none; width:18px; height:18px; border-radius:50%; display:grid; place-items:center; color:var(--ink-3); font-size:10px; transition:background .2s, color .2s; }
-.big-item .bi-del:hover{ background:var(--bad-soft); color:#9B5341; }
+.big-item .bi-del:hover{ background:var(--bad-soft); color:var(--bad-ink); }
 
 
 /* --- sleep --- */
@@ -654,11 +663,11 @@ body.cal-view .app{ width:max-content; max-width:100%; }
 .chip{ padding:3px 10px; border-radius:99px; border:1px solid var(--line); background:var(--surface); font-size:12.5px; font-weight:550; color:var(--ink-2); transition:all .22s var(--ease), transform .22s var(--spring); }
 .chip:hover{ background:var(--surface-2); }
 .chip:active{ transform:scale(.94); }
-.chip.on{ background:var(--good-soft); border-color:#CBDCBE; color:#557045; }
+.chip.on{ background:var(--good-soft); border-color:var(--good-line); color:var(--good-ink); }
 
 .sleep-gauge{ position:absolute; left:0; right:0; bottom:0; height:4px; overflow:hidden;
   background:var(--bg-warm); border-radius:0 0 var(--r-md) var(--r-md); }
-.sleep-gauge .ok{ position:absolute; top:0; bottom:0; background:#D6E2CB; }
+.sleep-gauge .ok{ position:absolute; top:0; bottom:0; background:var(--good-line); }
 .sleep-gauge .pin{ position:absolute; top:0; bottom:0; width:4px; border-radius:99px; background:var(--ink-2); transition:left .45s var(--ease-out), background .3s; }
 
 .sheet-foot{ padding:10px 20px; border-top:1px solid var(--line); background:var(--surface-2); display:flex; align-items:center; gap:10px; }
@@ -666,7 +675,7 @@ body.cal-view .app{ width:max-content; max-width:100%; }
 .sheet-foot .day-jr{ width:32px; height:32px; font-size:17px; }
 .sheet-foot .day-jr:disabled{ opacity:.35; cursor:default; pointer-events:none; }
 .ghost{ padding:7px 13px; border-radius:99px; border:1px solid var(--line); background:var(--surface); font-size:12.5px; font-weight:550; color:var(--ink-2); transition:all .22s var(--ease); }
-.ghost:hover{ background:#EFE7D9; color:var(--ink); }
+.ghost:hover{ background:var(--hover); color:var(--ink); }
 
 /* ============================================================
    ANALYTICS
@@ -706,8 +715,8 @@ body.cal-view .app{ width:max-content; max-width:100%; }
 .gym-row .cnt{ font-weight:600; flex:none; }
 .gym-row .adj{ width:52px; text-align:right; flex:none; font-weight:650; }
 .gym-row .pen{ width:52px; text-align:right; flex:none; font-size:11px; font-weight:650; color:var(--ink-3); }
-.gym-row.hit .cnt, .gym-row.hit .pen{ color:#5C7A4C; }
-.gym-row.warn .cnt, .gym-row.warn .pen{ color:#A9614F; }
+.gym-row.hit .cnt, .gym-row.hit .pen{ color:var(--good-ink); }
+.gym-row.warn .cnt, .gym-row.warn .pen{ color:var(--bad-ink); }
 
 /* --- weigh-in: one number a week, on its own axis --- */
 .weigh-input{ width:86px; flex:none; padding:5px 8px; border-radius:var(--r-sm); border:1px solid var(--line-2); background:var(--surface);
@@ -718,8 +727,8 @@ body.cal-view .app{ width:max-content; max-width:100%; }
 .tracker .hd .weigh-go{ margin-left:auto; font-size:11px; font-weight:650; letter-spacing:.03em; color:var(--ink-3); white-space:nowrap; }
 .weigh-delta{ font-size:12px; font-weight:650; font-variant-numeric:tabular-nums; white-space:nowrap; }
 .weigh-delta[title]{ cursor:help; }
-.weigh-delta.down{ color:#5C7A4C; }
-.weigh-delta.up{ color:#A9614F; }
+.weigh-delta.down{ color:var(--good-ink); }
+.weigh-delta.up{ color:var(--bad-ink); }
 .weigh-delta.flat{ color:var(--ink-3); }
 .weigh-hint{ font-size:11.5px; color:var(--ink-3); margin-top:7px; }
 .weigh-hint[hidden]{ display:none; }
@@ -736,12 +745,12 @@ body.cal-view .app{ width:max-content; max-width:100%; }
 .wi-row .wd{ color:var(--ink-3); flex:1; min-width:0; }
 .wi-row .kg{ width:76px; text-align:right; flex:none; font-weight:650; color:var(--ink); }
 .wi-row .dl{ width:66px; text-align:right; flex:none; font-size:11.5px; font-weight:650; color:var(--ink-3); }
-.wi-row .dl.down{ color:#5C7A4C; }
-.wi-row .dl.up{ color:#A9614F; }
+.wi-row .dl.down{ color:var(--good-ink); }
+.wi-row .dl.up{ color:var(--bad-ink); }
 
 /* --- demo banner --- */
 .demo-bar{ display:flex; align-items:center; gap:12px; padding:11px 16px; margin-bottom:16px; border-radius:99px;
-  background:var(--ink); color:#F7F2E8; font-size:12.5px; box-shadow:var(--shadow-md); animation:viewIn .5s var(--ease-out) both; }
+  background:var(--ink); color:var(--on-ink); font-size:12.5px; box-shadow:var(--shadow-md); animation:viewIn .5s var(--ease-out) both; }
 .demo-bar b{ font-weight:650; letter-spacing:.04em; }
 .demo-bar .sp{ margin-left:auto; }
 .demo-bar a{ color:#F7F2E8; font-weight:600; padding:5px 13px; border-radius:99px; background:rgba(247,242,232,.16); text-decoration:none; transition:background .2s; }
@@ -767,10 +776,10 @@ body.cal-view .app{ width:max-content; max-width:100%; }
 .csv-state .who em{ font-style:normal; color:var(--ink-3); display:block; font-size:11.5px; margin-top:1px; }
 .csv-state .sync{ margin-left:auto; font-size:11px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-3); flex:none; transition:color .3s, opacity .3s; }
 .csv-state .sync.ok{ color:var(--good); }
-.solid{ padding:7px 14px; border-radius:99px; background:var(--ink); color:#F7F2E8; font-size:12.5px; font-weight:600; transition:transform .22s var(--spring), opacity .2s; }
+.solid{ padding:7px 14px; border-radius:99px; background:var(--ink); color:var(--on-ink); font-size:12.5px; font-weight:600; transition:transform .22s var(--spring), opacity .2s; }
 .solid:hover{ opacity:.88; } .solid:active{ transform:scale(.95); }
 
-.tt{ position:fixed; z-index:60; pointer-events:none; background:var(--ink); color:#F7F2E8; font-size:11.5px; font-weight:500; padding:6px 9px; border-radius:7px; box-shadow:var(--shadow-md); opacity:0; transform:translate(-50%,-124%) scale(.94); transition:opacity .16s, transform .16s var(--ease-out); white-space:nowrap; }
+.tt{ position:fixed; z-index:60; pointer-events:none; background:var(--ink); color:var(--on-ink); font-size:11.5px; font-weight:500; padding:6px 9px; border-radius:7px; box-shadow:var(--shadow-md); opacity:0; transform:translate(-50%,-124%) scale(.94); transition:opacity .16s, transform .16s var(--ease-out); white-space:nowrap; }
 .tt.on{ opacity:1; transform:translate(-50%,-118%) scale(1); }
 
 /* ============================================================
@@ -813,7 +822,7 @@ body.cal-view .app{ width:max-content; max-width:100%; }
 .dl-card{ padding:10px 11px; border-radius:12px; background:rgba(255,253,246,.78); border:1px solid #EEDFAA;
   box-shadow:0 1px 2px rgba(120,100,40,.06); cursor:pointer; animation:itemIn .4s var(--ease-out) both; }
 .dl-card:hover{ background:#FFFDF7; }
-.dl-card.over{ background:rgba(252,240,234,.9); border-color:#EBC9BC; }
+.dl-card.over{ background:rgba(252,240,234,.9); border-color:var(--bad-line); }
 .dl-card.leaving, .dl-row.leaving{ opacity:0; transform:translateX(26px); }
 .dl-tick{ flex:none; width:18px; height:18px; margin-top:1px; border-radius:50%; border:1.6px solid #CDB971; background:#FFFDF6;
   display:grid; place-items:center; font-size:10px; font-weight:800; color:#fff; transition:background .2s, border-color .2s, transform .2s var(--spring); }
@@ -826,8 +835,8 @@ body.cal-view .app{ width:max-content; max-width:100%; }
 .dl-t{ font-size:13px; font-weight:600; line-height:1.3; color:var(--ink); overflow-wrap:anywhere; }
 .dl-when{ font-size:11.5px; color:var(--ink-3); margin-top:2px; }
 .dl-when b{ font-weight:650; color:var(--ink-2); }
-.soon .dl-when b{ color:#A07A2C; }
-.over .dl-when b{ color:#A6503F; }
+.soon .dl-when b{ color:var(--mid-ink); }
+.over .dl-when b{ color:var(--bad-ink); }
 .dl-note{ font-size:11.5px; line-height:1.4; color:var(--ink-2); margin-top:3px; overflow-wrap:anywhere; }
 .dl-card .dl-note{ display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
 .dl-empty{ margin:auto; padding:22px 12px; text-align:center; font-size:12px; line-height:1.6; color:#9C8A50; }
@@ -842,7 +851,7 @@ body.cal-view .app{ width:max-content; max-width:100%; }
 .dl-in:focus{ outline:none; border-color:#C9B26A; box-shadow:0 0 0 3px rgba(201,178,106,.18); }
 .dl-in::placeholder{ color:#B5A57A; }
 .dl-date{ flex:none; width:148px; }
-.dl-add{ flex:none; padding:8px 15px; border-radius:99px; background:var(--ink); color:#F7F2E8; font-size:12.5px; font-weight:650;
+.dl-add{ flex:none; padding:8px 15px; border-radius:99px; background:var(--ink); color:var(--on-ink); font-size:12.5px; font-weight:650;
   transition:transform .22s var(--spring), opacity .2s; }
 .dl-add:active{ transform:scale(.95); }
 .dl-seg{ display:flex; gap:3px; margin:16px 0 10px; padding:4px; background:var(--surface-2); border:1px solid var(--line); border-radius:99px; }
@@ -852,17 +861,17 @@ body.cal-view .app{ width:max-content; max-width:100%; }
 .dl-list{ display:flex; flex-direction:column; gap:8px; }
 .dl-list .dl-empty{ color:var(--ink-3); }
 .dl-row{ padding:11px 12px; border-radius:var(--r-md); background:var(--surface); border:1px solid var(--line); }
-.dl-row.over{ border-color:#EBC9BC; }
+.dl-row.over{ border-color:var(--bad-line); }
 .dl-row.editing{ border-color:#C9B26A; box-shadow:0 0 0 3px rgba(201,178,106,.16); }
 .dl-row.done .dl-t{ text-decoration:line-through; text-decoration-color:var(--line-2); color:var(--ink-3); }
 .dl-row.cancelled .dl-t{ color:var(--ink-3); }
 .dl-mark{ flex:none; width:18px; height:18px; margin-top:1px; border-radius:50%; display:grid; place-items:center; font-size:10px; font-weight:800; }
-.dl-row.done .dl-mark{ background:var(--good-soft); color:#5C7A4C; }
-.dl-row.cancelled .dl-mark{ background:#EFE7D9; color:var(--ink-3); }
+.dl-row.done .dl-mark{ background:var(--good-soft); color:var(--good-ink); }
+.dl-row.cancelled .dl-mark{ background:var(--hover); color:var(--ink-3); }
 .dl-acts{ display:flex; gap:4px; flex:none; }
 .dl-acts button{ padding:3px 9px; border-radius:99px; border:1px solid var(--line); background:var(--surface-2);
   font-size:11.5px; font-weight:600; color:var(--ink-2); transition:background .2s, color .2s; }
-.dl-acts button:hover{ background:#EFE7D9; color:var(--ink); }
+.dl-acts button:hover{ background:var(--hover); color:var(--ink); }
 
 /* ============================================================
    STICKY NOTES — a light-orange rail on the left edge
@@ -915,7 +924,7 @@ body.cal-view .app{ width:max-content; max-width:100%; }
 .sn-swatches button{ width:24px; height:24px; border-radius:50%; border:1px solid rgba(74,65,55,.15); transition:transform .2s var(--spring); }
 .sn-swatches button:hover{ transform:scale(1.12); }
 .sn-swatches button.on{ box-shadow:0 0 0 2px var(--surface), 0 0 0 3.5px var(--ink-3); }
-.sn-del{ width:100%; margin-top:9px; padding:6px 8px; border-radius:8px; text-align:left; font-size:12.5px; font-weight:600; color:#9E5544; transition:background .2s; }
+.sn-del{ width:100%; margin-top:9px; padding:6px 8px; border-radius:8px; text-align:left; font-size:12.5px; font-weight:600; color:var(--bad-ink); transition:background .2s; }
 .sn-del:hover{ background:var(--bad-soft); }
 .sn-del.arm{ background:var(--bad-soft); }
 
@@ -949,7 +958,9 @@ body.cal-view .app{ width:max-content; max-width:100%; }
 /* ============================================================
    FOCUS — plant a tree and stay with it (Forest-style), never logged
    ============================================================ */
+/* the clock's size as its own minimum, so it stays the same with the clock hidden */
 .focus-tile{ display:flex; align-items:center; justify-content:center; gap:13px; padding:0 18px 0 12px; border-radius:20px; text-align:left;
+  min-width:187px; min-height:98px;
   background:linear-gradient(180deg, #F7F1E6 0%, #EEE5D6 100%); border:1px solid var(--line);
   box-shadow:var(--shadow-md), inset 0 1px 0 rgba(255,255,255,.7); transition:transform .22s var(--spring), box-shadow .25s; }
 .focus-tile:hover{ transform:translateY(-2px); box-shadow:var(--shadow-lg); }
@@ -1036,7 +1047,7 @@ body.cal-view .app{ width:max-content; max-width:100%; }
 .mm-link{ display:flex; align-items:center; gap:6px; font-size:12px; color:var(--ink-3); }
 .mm-link select{ max-width:250px; padding:6px 10px; border-radius:99px; border:1px solid var(--line-2); background:var(--surface);
   font:inherit; font-size:12.5px; color:var(--ink-2); }
-.mm-del{ padding:6px 12px; border-radius:99px; font-size:12.5px; font-weight:600; color:#9E5544; transition:background .2s; }
+.mm-del{ padding:6px 12px; border-radius:99px; font-size:12.5px; font-weight:600; color:var(--bad-ink); transition:background .2s; }
 .mm-del:hover, .mm-del.arm{ background:var(--bad-soft); }
 
 /* ---- the map: one mode, keyed boxes on transforms, tapered branches ----
@@ -1124,8 +1135,8 @@ body.cal-view .app{ width:max-content; max-width:100%; }
 .mm-due{ flex:none; padding:1px 8px; border-radius:99px; font-size:10.5px; font-weight:700; font-style:normal; letter-spacing:0;
   color:var(--ink-3); background:rgba(255,255,255,.7); border:1px solid rgba(74,65,55,.12); }
 .mm-due[hidden]{ display:none; }
-.mm-due.soon{ color:#A07A2C; background:#FBF1D9; border-color:#EAD49B; }
-.mm-due.over{ color:#A6503F; background:#FBE6E0; border-color:#EBC2B6; }
+.mm-due.soon{ color:var(--mid-ink); background:#FBF1D9; border-color:#EAD49B; }
+.mm-due.over{ color:var(--bad-ink); background:#FBE6E0; border-color:var(--bad-line); }
 
 /* where a dragged box will land */
 .mm-ph{ position:absolute; left:0; top:0; border-radius:8px; pointer-events:none;
@@ -1144,13 +1155,102 @@ body.cal-view .app{ width:max-content; max-width:100%; }
 .mm-tools button:hover{ background:var(--surface-2); color:var(--ink); }
 .mm-tools svg{ width:15px; height:15px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; transition:transform .25s var(--mm-spring); }
 .mm-tools [data-tool="fold"].folded svg{ transform:rotate(-90deg); }
-.mm-tools [data-tool="del"]:hover, .mm-tools [data-tool="del"].arm{ color:#9E5544; background:var(--bad-soft); }
+.mm-tools [data-tool="del"]:hover, .mm-tools [data-tool="del"].arm{ color:var(--bad-ink); background:var(--bad-soft); }
 
 @media (prefers-reduced-motion: reduce){
   .mm .mm-node, .mm .mm-lines path, .mm .mm-ph, .mm .mm-tools, .mm .mm-node *{ transition:opacity .12s linear !important; animation:none !important; }
 }
 
-.toast{ position:fixed; left:50%; bottom:26px; transform:translate(-50%,16px); z-index:70; background:var(--ink); color:#F7F2E8; font-size:13px; padding:10px 16px; border-radius:99px; box-shadow:var(--shadow-lg); opacity:0; pointer-events:none; transition:opacity .3s var(--ease), transform .34s var(--ease-out); }
+/* ============================================================
+   SETTINGS — the profile bar under the notes, and the ⚙ panel
+   ============================================================ */
+.sn-foot{ display:flex; align-items:center; gap:6px; padding:10px 10px 12px; border-top:1px solid #EBCFAE; }
+.me{ flex:1; min-width:0; display:flex; align-items:center; gap:10px; padding:6px 8px; border-radius:12px; text-align:left; transition:background-color .2s; }
+.me:hover{ background:rgba(255,255,255,.45); }
+.me-av{ flex:none; width:32px; height:32px; border-radius:50%; display:grid; place-items:center;
+  background:linear-gradient(180deg, #D9A06B 0%, #C4844F 100%); color:#FFF8EE; font-size:12.5px; font-weight:700; letter-spacing:.02em;
+  box-shadow:inset 0 -1px 3px rgba(74,45,20,.22); }
+.me-av svg{ width:16px; height:16px; }
+.me-av.big{ width:52px; height:52px; font-size:19px; }
+.me-av.big svg{ width:24px; height:24px; }
+.me-txt{ min-width:0; display:flex; align-items:baseline; gap:6px; }
+.me-txt b{ font-size:14px; font-weight:650; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.me-txt b.unset{ color:#A88660; font-weight:600; }
+.me-txt em{ flex:none; font-style:normal; font-size:12px; color:#A88660; }
+.me-gear, .set-fab{ flex:none; display:grid; place-items:center; border-radius:50%; color:#8A6440; transition:background-color .2s, transform .35s var(--spring); }
+.me-gear{ width:34px; height:34px; }
+.me-gear:hover, .set-fab:hover{ background:rgba(255,255,255,.5); transform:rotate(45deg); }
+.me-gear svg, .set-fab svg{ width:19px; height:19px; }
+#themeBtn .i-sun, :root[data-theme="dark"] #themeBtn .i-moon{ display:none; }
+:root[data-theme="dark"] #themeBtn .i-sun{ display:block; }
+#themeBtn:hover{ transform:rotate(-20deg); }
+/* when the notes column isn't on screen, a small gear keeps Settings in reach */
+.set-fab{ position:fixed; left:14px; bottom:14px; z-index:31; width:38px; height:38px; background:var(--surface);
+  border:1px solid var(--line); box-shadow:var(--shadow-md); }
+@media (min-width:1500px){ :root:not(.hide-notes) .set-fab{ display:none; } }
+
+.sheet.set-sheet{ width:min(480px,100%); left:0; right:auto; border-left:0; border-right:1px solid var(--line); transform:translateX(-100%); }
+.sheet.set-sheet.on{ transform:none; }
+@media (max-width:600px){ .sheet.set-sheet{ width:100%; transform:translateY(100%); } }
+.set-body{ padding:14px 18px 24px; display:flex; flex-direction:column; gap:14px; }
+.set-profile{ display:flex; align-items:center; gap:14px; }
+.set-in{ flex:1; min-width:0; padding:9px 12px; border-radius:var(--r-sm); border:1px solid var(--line-2); background:var(--surface);
+  font-size:14px; transition:border-color .2s, box-shadow .2s; }
+.set-in:focus{ outline:none; border-color:var(--ink-3); box-shadow:0 0 0 3px rgba(166,152,127,.14); }
+.set-row{ display:flex; align-items:center; gap:12px; padding:10px 0; border-top:1px solid var(--line); }
+.set-row:first-of-type{ border-top:0; }
+.set-row .t{ flex:1; min-width:0; }
+.set-row .t b{ display:block; font-size:13.5px; font-weight:600; }
+.set-row .t span{ font-size:12px; color:var(--ink-3); }
+.set-row.off{ opacity:.45; }
+/* a switch, from a plain checkbox */
+.sw{ appearance:none; flex:none; width:38px; height:22px; margin:0; border-radius:99px; background:var(--line-2); position:relative; cursor:pointer;
+  transition:background-color .25s var(--ease); }
+.sw::after{ content:''; position:absolute; top:3px; left:3px; width:16px; height:16px; border-radius:50%; background:#fff;
+  box-shadow:0 1px 3px rgba(74,65,55,.25); transition:transform .3s var(--spring); }
+.sw:checked{ background:var(--good); }
+.sw:checked::after{ transform:translateX(16px); }
+.sw:disabled{ cursor:default; }
+.sw:focus-visible{ outline:2px solid var(--ink-3); outline-offset:2px; }
+.set-note{ font-size:11.5px; color:var(--ink-3); margin-top:8px; }
+
+/* hidden parts leave their space empty — the middle of the page never moves or resizes */
+:root.hide-notes .sn-rail{ display:none !important; }
+/* the right column's two halves switch independently; the one left fills the column */
+:root.hide-dl .rail-sec:not(.mm-sec){ display:none; }
+:root.hide-dl .rail-sec.mm-sec{ border-top:0; }
+:root.hide-mm .rail-sec.mm-sec{ display:none; }
+:root.hide-dl.hide-mm .dl-rail{ display:none !important; }
+:root.hide-clock #flipClock, :root.hide-focus #focusTile{ display:none; }
+:root.hide-clock.hide-focus .dock{ display:none !important; }
+
+/* ============================================================
+   BIG CLOCK — click the flip clock: it grows to fill the screen
+   ============================================================ */
+#flipClock{ cursor:zoom-in; }
+.bigclock{ position:fixed; inset:0; z-index:88; display:grid; place-items:center; background:var(--bg); cursor:zoom-out;
+  opacity:0; pointer-events:none; transition:opacity .35s var(--ease); }
+.bigclock.on{ opacity:1; pointer-events:auto; }
+.bigclock.idle{ cursor:none; }
+/* one size to scale everything from: the card height */
+.flipclock.big{ --bc:min(31vw, 50vh); gap:calc(var(--bc) * .11); padding:calc(var(--bc) * .1) calc(var(--bc) * .12);
+  border-radius:calc(var(--bc) * .2); box-shadow:var(--shadow-lg), inset 0 1px 0 rgba(255,255,255,.5); will-change:transform; }
+.flipclock.big::before, .flipclock.big::after{ width:calc(var(--bc) * .045); height:calc(var(--bc) * .2); margin-top:calc(var(--bc) * -.1); border-radius:4px; }
+.flipclock.big::before{ left:calc(var(--bc) * -.045); }
+.flipclock.big::after{ right:calc(var(--bc) * -.045); }
+.big .fc-card{ width:calc(var(--bc) * .9); height:var(--bc); border-radius:calc(var(--bc) * .11); perspective:calc(var(--bc) * 4);
+  box-shadow:0 calc(var(--bc) * .02) calc(var(--bc) * .05) rgba(74,65,55,.16); }
+.big .fc-top, .big .fc-flap-top{ border-radius:calc(var(--bc) * .11) calc(var(--bc) * .11) 0 0; }
+.big .fc-bot, .big .fc-flap-bot{ border-radius:0 0 calc(var(--bc) * .11) calc(var(--bc) * .11); }
+.big .fc-half span, .big .fc-flap span{ height:var(--bc); line-height:var(--bc); font-size:calc(var(--bc) * .66); }
+.big .fc-bot span, .big .fc-flap-bot span{ top:calc(var(--bc) / -2); }
+.big .fc-card::after{ height:calc(var(--bc) * .018); margin-top:calc(var(--bc) * -.009); }
+.big .fc-sep{ width:calc(var(--bc) * .055); height:calc(var(--bc) * .5); border-radius:99px; }
+.bigclock-hint{ position:absolute; left:0; right:0; bottom:28px; text-align:center; font-size:12.5px; color:var(--ink-3); transition:opacity .6s var(--ease); }
+.bigclock.idle .bigclock-hint{ opacity:0; }
+:root[data-theme="dark"] .flipclock.big{ box-shadow:var(--shadow-lg), inset 0 1px 0 rgba(255,255,255,.05); }
+
+.toast{ position:fixed; left:50%; bottom:26px; transform:translate(-50%,16px); z-index:70; background:var(--ink); color:var(--on-ink); font-size:13px; padding:10px 16px; border-radius:99px; box-shadow:var(--shadow-lg); opacity:0; pointer-events:none; transition:opacity .3s var(--ease), transform .34s var(--ease-out); }
 .toast.on{ opacity:1; transform:translate(-50%,0); }
 
 @media (max-width:600px){
@@ -1169,6 +1269,141 @@ body.cal-view .app{ width:max-content; max-width:100%; }
 @media (prefers-reduced-motion:reduce){
   *{ animation-duration:.01ms !important; transition-duration:.01ms !important; }
 }
+/* ============================================================
+   DARK THEME — warm espresso, the same hues as the light one
+   ============================================================ */
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#1C1915; --bg-warm:#221E19; --surface:#28231D; --surface-2:#2F2922;
+  --line:#3B342B; --line-2:#4A4136; --ink:#ECE3D4; --ink-2:#BCAF9C; --ink-3:#8C806E;
+  --good:#8DB07B; --good-soft:#26301F; --mid:#D2AE69; --mid-soft:#352C1E; --bad:#D08A79; --bad-soft:#3A2722;
+  --water:#8AB0C2; --water-soft:#1F2C34;
+  --good-ink:#A4C793; --mid-ink:#DDBB78; --bad-ink:#E3A08F; --gold:#D9B261;
+  --good-line:#3B4A32; --mid-line:#4A3E28; --bad-line:#55362E;
+  --hover:#383128; --on-ink:#1E1A16;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.28), 0 2px 6px rgba(0,0,0,.22);
+  --shadow-md:0 2px 6px rgba(0,0,0,.32), 0 10px 26px rgba(0,0,0,.38);
+  --shadow-lg:0 4px 12px rgba(0,0,0,.38), 0 24px 60px rgba(0,0,0,.5);
+}
+:root[data-theme="dark"] body{ background:
+  radial-gradient(1200px 600px at 12% -8%, #27221C 0%, rgba(39,34,28,0) 60%),
+  radial-gradient(900px 500px at 100% 0%, #24201A 0%, rgba(36,32,26,0) 55%), var(--bg); }
+:root[data-theme="dark"] ::selection{ background:#4A4136; }
+:root[data-theme="dark"] .scrim{ background:rgba(0,0,0,.5); }
+:root[data-theme="dark"] .demo-bar a{ color:var(--on-ink); background:rgba(30,26,22,.12); }
+:root[data-theme="dark"] .demo-bar a:hover{ background:rgba(30,26,22,.22); }
+:root[data-theme="dark"] .titlechip.t-gold{ border-color:#5A4A26; background:linear-gradient(180deg,#352C1C,#2E2618); }
+:root[data-theme="dark"] .coin-btn:hover{ background:var(--hover); border-color:var(--line-2); }
+:root[data-theme="dark"] .jr-btn:hover{ background:var(--hover); }
+:root[data-theme="dark"] .day.locked .n{ color:#6E6353; }
+:root[data-theme="dark"] .day.future .n{ color:#5D5446; }
+:root[data-theme="dark"] .bot.on{ border-color:#4D6A78; }
+:root[data-theme="dark"] .big-toggle:hover{ border-color:#4D6A78; color:#9CC0D0; }
+:root[data-theme="dark"] .big-item:hover{ border-color:#4D6A78; }
+
+/* journal: the notepad turns to dark paper */
+:root[data-theme="dark"] .notepad-base{ background:#2C2620;
+  box-shadow:0 2px 0 #221D18, 0 4px 0 #2C2620, 0 5px 0 #1C1814, 0 7px 0 #2C2620, 0 8px 0 #191511, var(--shadow-lg); }
+:root[data-theme="dark"] .page, :root[data-theme="dark"] .face.front{ background:#2A251F; }
+:root[data-theme="dark"] .face.back{ background:repeating-linear-gradient(180deg, transparent 0 27px, rgba(90,78,64,.4) 27px 28px) #25201A; }
+:root[data-theme="dark"] .coil i{ border-color:#A79A88; border-bottom-color:transparent; }
+:root[data-theme="dark"] .holes i{ box-shadow:inset 0 1px 2px rgba(0,0,0,.6); }
+:root[data-theme="dark"] .pg-text{ background:repeating-linear-gradient(180deg, transparent 0 calc(var(--lh) - 1px), #463D32 calc(var(--lh) - 1px) var(--lh)); }
+:root[data-theme="dark"] .pg-text::placeholder{ color:#6C6152; }
+
+/* deadlines rail: amber night */
+:root[data-theme="dark"] .dl-rail{ background:linear-gradient(180deg, #29251A 0%, #24201A 100%); border-left-color:#3E3722; box-shadow:-6px 0 24px rgba(0,0,0,.25); }
+:root[data-theme="dark"] .dl-rail-ttl{ color:#CDB46A; }
+:root[data-theme="dark"] .dl-count{ background:#463D22; color:#EBD9A0; }
+:root[data-theme="dark"] .dl-icon{ background:#3D3520; border-color:#5A4D2A; color:#EBD9A0; }
+:root[data-theme="dark"] .dl-icon:hover{ background:#4A4026; }
+:root[data-theme="dark"] .dl-rail-list::-webkit-scrollbar-thumb{ background:#4A4026; border-color:#29251A; }
+:root[data-theme="dark"] .dl-card{ background:rgba(255,248,225,.05); border-color:#3F3824; }
+:root[data-theme="dark"] .dl-card:hover{ background:rgba(255,248,225,.09); }
+:root[data-theme="dark"] .dl-card.over{ background:rgba(208,138,121,.12); border-color:var(--bad-line); }
+:root[data-theme="dark"] .dl-tick{ border-color:#8E7D46; background:transparent; }
+:root[data-theme="dark"] .over .dl-tick{ border-color:#9A5E50; }
+:root[data-theme="dark"] .dl-empty{ color:#8F8257; }
+:root[data-theme="dark"] .rail-sec + .rail-sec{ border-top-color:#3E3722; }
+:root[data-theme="dark"] .dl-form{ background:#2E2919; border-color:#4A4026; }
+:root[data-theme="dark"] .dl-in{ background:var(--surface); border-color:#4A4026; }
+:root[data-theme="dark"] .dl-in:focus{ border-color:#8E7D46; box-shadow:0 0 0 3px rgba(142,125,70,.25); }
+:root[data-theme="dark"] .dl-in::placeholder{ color:#7F7354; }
+:root[data-theme="dark"] .dl-row.editing{ border-color:#8E7D46; box-shadow:0 0 0 3px rgba(142,125,70,.2); }
+:root[data-theme="dark"] .dl-map{ color:#EBD9A0; background:#463D22; border-color:#5F5230; }
+:root[data-theme="dark"] .dl-map:hover{ background:#524729; }
+
+/* mind maps half: deep sage */
+:root[data-theme="dark"] .mm-sec{ background:linear-gradient(180deg, #20271D 0%, #1C2219 100%); }
+:root[data-theme="dark"] .rail-sec.mm-sec{ border-top-color:#34402C; }
+:root[data-theme="dark"] .mm-sec .dl-rail-ttl{ color:#9CB585; }
+:root[data-theme="dark"] .mm-sec .dl-count{ background:#33402A; color:#CFE0BC; }
+:root[data-theme="dark"] .mm-sec .dl-icon{ background:#2D3926; border-color:#43533A; color:#CFE0BC; }
+:root[data-theme="dark"] .mm-sec .dl-icon:hover{ background:#36442E; }
+:root[data-theme="dark"] .mm-sec .dl-empty{ color:#7E8F6B; }
+:root[data-theme="dark"] .mm-sec .dl-rail-list::-webkit-scrollbar-thumb{ background:#36442E; border-color:#1E2519; }
+:root[data-theme="dark"] .mm-card{ background:rgba(240,255,230,.05); border-color:#38452F; }
+:root[data-theme="dark"] .mm-card:hover{ background:rgba(240,255,230,.09); }
+
+/* notes rail: ember */
+:root[data-theme="dark"] .sn-rail{ background:linear-gradient(180deg, #2B2119 0%, #261D15 100%); border-right-color:#45342A; box-shadow:6px 0 24px rgba(0,0,0,.25); }
+:root[data-theme="dark"] .sn-rail-ttl{ color:#D7A574; }
+:root[data-theme="dark"] .sn-count{ background:#4A3424; color:#F0CFA9; }
+:root[data-theme="dark"] .sn-new{ background:#43301F; border-color:#5E4530; color:#F0CFA9; }
+:root[data-theme="dark"] .sn-new:hover{ background:#4F3926; }
+:root[data-theme="dark"] .sn-list::-webkit-scrollbar-thumb{ background:#4A3424; border-color:#2A2018; }
+:root[data-theme="dark"] .sn-empty{ color:#A3825F; }
+:root[data-theme="dark"] .sn{ background:color-mix(in srgb, var(--sn-b) 9%, var(--surface)); border-color:rgba(255,255,255,.06); }
+:root[data-theme="dark"] .sn-bar{ background:color-mix(in srgb, var(--sn-h) 40%, var(--surface)); }
+:root[data-theme="dark"] .sn-bar button{ color:rgba(236,227,212,.75); }
+:root[data-theme="dark"] .sn-bar button:hover{ background:rgba(255,255,255,.08); }
+:root[data-theme="dark"] .sn-ed:empty::before{ color:rgba(236,227,212,.35); }
+:root[data-theme="dark"] .sn-tools{ border-top-color:rgba(255,255,255,.06); }
+:root[data-theme="dark"] .sn-tools button:hover{ background:rgba(255,255,255,.07); }
+:root[data-theme="dark"] .sn-tools button.on{ background:rgba(255,255,255,.12); }
+:root[data-theme="dark"] .sn-swatches button{ border-color:rgba(255,255,255,.15); }
+:root[data-theme="dark"] .sn-foot{ border-top-color:#45342A; }
+:root[data-theme="dark"] .me:hover{ background:rgba(255,255,255,.06); }
+:root[data-theme="dark"] .me-txt b.unset, :root[data-theme="dark"] .me-txt em{ color:#A3825F; }
+:root[data-theme="dark"] .me-gear, :root[data-theme="dark"] .set-fab{ color:#D7A574; }
+:root[data-theme="dark"] .me-gear:hover{ background:rgba(255,255,255,.08); }
+:root[data-theme="dark"] .set-fab{ background:var(--surface); }
+:root[data-theme="dark"] .set-fab:hover{ background:var(--hover); }
+
+/* flip clock and focus tile: dark housing, dark cards */
+:root[data-theme="dark"] .flipclock, :root[data-theme="dark"] .focus-tile{ background:linear-gradient(180deg, #2F2922 0%, #29231D 100%);
+  box-shadow:var(--shadow-md), inset 0 1px 0 rgba(255,255,255,.04); }
+:root[data-theme="dark"] .flipclock::before, :root[data-theme="dark"] .flipclock::after{ background:#4A4136; }
+:root[data-theme="dark"] .fc-top, :root[data-theme="dark"] .fc-flap-top{ background:linear-gradient(180deg, #3B342C 0%, #362F28 100%); }
+:root[data-theme="dark"] .fc-bot, :root[data-theme="dark"] .fc-flap-bot{ background:linear-gradient(180deg, #322B24 0%, #2D2720 100%); }
+:root[data-theme="dark"] .fc-card{ box-shadow:0 2px 4px rgba(0,0,0,.35); }
+:root[data-theme="dark"] .fc-card::after{ background:rgba(0,0,0,.4); }
+:root[data-theme="dark"] .fc-sep{ background:linear-gradient(180deg, #5A4F42 0%, #4A4136 100%); }
+:root[data-theme="dark"] .focus{ background:radial-gradient(120% 90% at 50% 38%, #4E917A 0%, #3B7C67 55%, #2E6957 100%); }
+
+/* mind map window */
+:root[data-theme="dark"] .mm-stage{ background:radial-gradient(circle, rgba(255,255,255,.07) 1px, transparent 1.3px) 0 0 / 22px 22px, var(--surface); }
+:root[data-theme="dark"] .mm-main{ color:color-mix(in srgb, var(--s) 55%, var(--ink)); background:color-mix(in srgb, var(--s) 30%, var(--surface)); }
+:root[data-theme="dark"] .mm-sub:hover{ background-color:color-mix(in srgb, var(--s) 14%, transparent); }
+:root[data-theme="dark"] .mm-sub.sel, :root[data-theme="dark"] .mm-sub.lift{ background-color:color-mix(in srgb, var(--s) 20%, var(--surface)); }
+:root[data-theme="dark"] .mm-ph{ background:color-mix(in srgb, var(--s) 14%, transparent); }
+:root[data-theme="dark"] .mm-due{ background:rgba(255,255,255,.05); border-color:rgba(255,255,255,.12); }
+:root[data-theme="dark"] .mm-due.soon{ background:#3A3020; border-color:#5A4A28; }
+:root[data-theme="dark"] .mm-due.over{ background:#3D2622; border-color:#5A3830; }
+
+/* the demo banner stays a quiet dark band, not a cream stripe */
+:root[data-theme="dark"] .demo-bar{ background:#3A3229; color:var(--ink); }
+:root[data-theme="dark"] .demo-bar a{ color:var(--ink); background:rgba(255,255,255,.08); }
+:root[data-theme="dark"] .demo-bar a:hover{ background:rgba(255,255,255,.14); }
+/* an unticked box's hidden check leaves a dot of its round cap — invisible on cream, not on dark */
+:root[data-theme="dark"] .item:not(.done) .box path{ stroke:transparent; }
+
+/* switching themes: the browser snapshots the page before and after (View Transitions), so
+   gradients and everything else change together on the GPU. From a button, the new theme
+   spreads out in a circle from it; when the system flips it, the two simply crossfade. */
+::view-transition-group(root){ animation-duration:.42s; animation-timing-function:cubic-bezier(.4,0,.2,1); }
+:root.vt-reveal::view-transition-old(root), :root.vt-reveal::view-transition-new(root){ animation:none; mix-blend-mode:normal; }
+:root.vt-reveal::view-transition-new(root){ z-index:2; }
 </style>
 </head>
 <body>
@@ -1247,7 +1482,13 @@ body.cal-view .app{ width:max-content; max-width:100%; }
     </button>
   </div>
   <div class="sn-list" id="snList"></div>
+  <div class="sn-foot">
+    <button class="me" id="meBtn" type="button" title="Settings"><span class="me-av" id="meAv"></span><span class="me-txt"><b id="meName"></b><em id="meSub"></em></span></button>
+    <button class="me-gear" id="themeBtn" type="button" title="Dark mode" aria-label="Switch to dark mode"><svg class="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"/></svg><svg class="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4L6 18M18 6l1.4-1.4"/></svg></button>
+    <button class="me-gear" id="gearBtn" type="button" title="Settings" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+  </div>
 </aside>
+<button class="set-fab" id="setFab" type="button" title="Settings" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
 
 <aside class="dl-rail" id="dlRail" aria-label="Open deadlines and mind maps">
   <section class="rail-sec">
@@ -1269,6 +1510,23 @@ body.cal-view .app{ width:max-content; max-width:100%; }
     </div>
     <div class="dl-rail-list" id="mmList"></div>
   </section>
+</aside>
+
+<div class="scrim" id="setScrim"></div>
+<aside class="sheet set-sheet" id="setPanel" role="dialog" aria-modal="true" aria-label="Settings">
+  <div class="sheet-head">
+    <div class="row">
+      <div>
+        <div class="dayno">Settings</div>
+        <h2>Preferences</h2>
+        <div class="meta">Saved with your log, so they're there every time you open the app</div>
+      </div>
+      <button class="x-btn" id="setClose" aria-label="Close">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="sheet-body set-body" id="setBody"></div>
 </aside>
 
 <div class="scrim" id="mmScrim"></div>
@@ -1429,6 +1687,15 @@ body.cal-view .app{ width:max-content; max-width:100%; }
   <div class="focus-time" id="fzTime">25:00</div>
   <button class="focus-btn" id="fzBtn" type="button">Plant</button>
   <div class="focus-hint" id="fzHint">Drag the ring to set the time</div>
+</div>
+
+<div class="bigclock" id="bigClock" role="dialog" aria-modal="true" aria-label="Clock">
+  <div class="flipclock big" id="bigHousing">
+    <div class="fc-card" id="bcH"><div class="fc-half fc-top"><span></span></div><div class="fc-half fc-bot"><span></span></div></div>
+    <div class="fc-sep"></div>
+    <div class="fc-card" id="bcM"><div class="fc-half fc-top"><span></span></div><div class="fc-half fc-bot"><span></span></div></div>
+  </div>
+  <div class="bigclock-hint">Click anywhere or press Esc to go back</div>
 </div>
 
 <div class="tt" id="tt"></div>
@@ -3125,7 +3392,54 @@ function fcTick(animate){
   const d = new Date(), h = String(d.getHours()).padStart(2,'0'), m = String(d.getMinutes()).padStart(2,'0');
   fcSet(fcH, h, animate); fcSet(fcM, m, animate);
   fcEl.setAttribute('aria-label', `Time ${h}:${m}`);
+  if (bcEl.classList.contains('on')){ fcSet(bcH, h, animate); fcSet(bcM, m, animate); }
 }
+
+/* ---- the big clock: the flip clock grown to fill the screen, and nothing else ----
+   It grows out of the small clock's spot and shrinks back into it. With the mouse still for a
+   moment, the cursor and the hint fade away so only the clock is left. */
+const bcEl = document.getElementById('bigClock'), bcHousing = document.getElementById('bigHousing');
+const bcH = document.getElementById('bcH'), bcM = document.getElementById('bcM');
+let bcIdle = 0, bcAnim = null;
+/** The transform that sits the big housing exactly over the small clock. */
+function bcFromSmall(){
+  const a = fcEl.getBoundingClientRect(), b = bcHousing.getBoundingClientRect();
+  if (!a.width || !b.width) return null;
+  const sc = a.width / b.width;
+  return `translate(${(a.left + a.width / 2) - (b.left + b.width / 2)}px, ${(a.top + a.height / 2) - (b.top + b.height / 2)}px) scale(${sc})`;
+}
+function bcWake(){
+  bcEl.classList.remove('idle'); clearTimeout(bcIdle);
+  bcIdle = setTimeout(() => bcEl.classList.add('idle'), 2200);
+}
+function openBigClock(){
+  if (bcEl.classList.contains('on')) return;
+  const d = new Date();
+  fcSet(bcH, String(d.getHours()).padStart(2,'0'), false); fcSet(bcM, String(d.getMinutes()).padStart(2,'0'), false);
+  if (bcAnim) bcAnim.cancel();
+  bcEl.classList.add('on');
+  const from = bcFromSmall();
+  if (from && !reducedMotion.matches)
+    bcAnim = bcHousing.animate([{ transform: from }, { transform: 'none' }], { duration: 560, easing: 'cubic-bezier(.16,1,.3,1)' });
+  bcWake();
+}
+function closeBigClock(){
+  if (!bcEl.classList.contains('on')) return;
+  clearTimeout(bcIdle);
+  const to = bcFromSmall();
+  if (!to || reducedMotion.matches){ bcEl.classList.remove('on', 'idle'); return; }
+  if (bcAnim) bcAnim.cancel();
+  bcAnim = bcHousing.animate([{ transform: 'none' }, { transform: to }], { duration: 380, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards' });
+  bcEl.classList.remove('on', 'idle');                      // the backdrop fades while the clock shrinks home
+  bcAnim.finished.then(a => a.cancel(), () => {});
+}
+fcEl.addEventListener('click', openBigClock);
+fcEl.setAttribute('title', 'Show the clock full screen');
+bcEl.addEventListener('click', closeBigClock);
+bcEl.addEventListener('mousemove', bcWake);
+document.addEventListener('keydown', e=>{
+  if (e.key === 'Escape' && bcEl.classList.contains('on')){ e.stopImmediatePropagation(); closeBigClock(); }
+}, true);
 // wake on each minute boundary rather than polling
 function fcSchedule(){
   const d = new Date();
@@ -4564,6 +4878,142 @@ document.getElementById('mmDel').addEventListener('click', e=>{
 window.addEventListener('resize', ()=>{ if (MM.map) mmFit(false); });
 
 /* ============================================================
+   SETTINGS — profile name, what's on screen, data & backups
+   ============================================================ */
+/* { name?, hide:{ notes?, deadlines?, mindmaps?, clock?, focus? } } under a reserved key, so it
+   travels with the log. Hiding a part never touches its data — turning it back on brings it back. */
+const PREF_KEY = '_prefs';
+const prefs = () => (DB[PREF_KEY] && typeof DB[PREF_KEY] === 'object') ? DB[PREF_KEY] : {};
+const prefsWrite = () => { const p = DB[PREF_KEY] = prefs(); p.hide = p.hide || {}; return p; };
+const setPanel = document.getElementById('setPanel'), setScrim = document.getElementById('setScrim');
+const PERSON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>';
+const SHOW = [
+  { k:'notes',     t:'Notes column',  d:'Sticky notes on the left' },
+  { k:'deadlines', t:'Deadlines',     d:'The top of the right column' },
+  { k:'mindmaps',  t:'Mind maps',     d:'The bottom of the right column' },
+  { k:'clock',     t:'Flip clock',    d:'Under the calendar' },
+  { k:'focus',     t:'Focus timer',   d:'The tile beside the clock' },
+];
+/* light (the original), dark, or follow the system. Mirrored to localStorage so the page can
+   pick it up before its first paint. */
+const themeMQ = matchMedia('(prefers-color-scheme: dark)');
+/** Put the chosen theme on the page. `from` (a point) animates it as a circle spreading from
+    there; `animate` alone crossfades. Either way it is one GPU animation of two snapshots. */
+function applyTheme(animate, from){
+  const pick = prefs().theme || 'light', root = document.documentElement;
+  const dark = pick === 'dark' || (pick === 'system' && themeMQ.matches);
+  const flip = () => {
+    if (dark) root.dataset.theme = 'dark'; else delete root.dataset.theme;
+    const b = document.getElementById('themeBtn');
+    if (b){ b.title = dark ? 'Light mode' : 'Dark mode'; b.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode'); }
+  };
+  try { localStorage.setItem('monthlyPlan.theme', pick); } catch {}
+  if (dark === (root.dataset.theme === 'dark')) return flip();          // nothing visible changes
+  if (!animate || reducedMotion.matches || !document.startViewTransition) return flip();
+  if (from) root.classList.add('vt-reveal');
+  const t = document.startViewTransition(flip);
+  if (from) t.ready.then(() => {
+    const r = Math.hypot(Math.max(from.x, innerWidth - from.x), Math.max(from.y, innerHeight - from.y));
+    root.animate({ clipPath: [`circle(0px at ${from.x}px ${from.y}px)`, `circle(${r}px at ${from.x}px ${from.y}px)`] },
+                 { duration: 560, easing: 'cubic-bezier(.65,0,.35,1)', pseudoElement: '::view-transition-new(root)' });
+  }).catch(() => {});
+  t.finished.finally(() => root.classList.remove('vt-reveal'));
+}
+/** The centre of whatever was clicked — where the new theme grows from. */
+const centreOf = el => { const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; };
+function setTheme(pick, from){
+  const p = prefsWrite();
+  if (pick === 'light') delete p.theme; else p.theme = pick;
+  save();
+  if (setPanel.classList.contains('on')) renderSettings();            // the switch shows the new choice first
+  applyTheme(true, from);
+}
+themeMQ.addEventListener('change', () => { if (prefs().theme === 'system') applyTheme(true); });
+document.getElementById('themeBtn').addEventListener('click', e =>
+  setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark', centreOf(e.currentTarget)));
+const initials = name => name.trim().split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');
+
+function renderMe(){
+  const name = (prefs().name || '').trim();
+  const av = initials(name);
+  ['meAv', 'setAv'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = av ? escHtml(av) : PERSON; });
+  const nm = document.getElementById('meName');
+  nm.textContent = name || 'Set your name'; nm.classList.toggle('unset', !name);
+  document.getElementById('meSub').textContent = DEMO ? '· Demo' : `· Day ${Math.max(1, dayNumber(today()))}`;
+}
+/** Put the hide / show choices on the page, then let the layout settle around them. */
+function applyPrefs(){
+  const h = prefs().hide || {}, root = document.documentElement;
+  root.classList.toggle('hide-notes', !!h.notes);
+  root.classList.toggle('hide-dl', !!h.deadlines);
+  root.classList.toggle('hide-mm', !!h.mindmaps);
+  root.classList.toggle('hide-clock', !!h.clock);
+  root.classList.toggle('hide-focus', !!h.focus);
+  applyTheme();
+  renderMe();
+}
+function settleLayout(){ renderTitle(); fitCalendar(); fitRailLists(); movePill(); }
+
+function renderSettings(){
+  const p = prefs(), h = p.hide || {};
+  const theme = p.theme || 'light';
+  document.getElementById('setBody').innerHTML = `
+    <div class="panel">
+      <h3>Appearance</h3>
+      <div class="cap">Light is the original look. Match system follows Windows' own setting.</div>
+      <div class="dl-seg" role="radiogroup" aria-label="Theme" style="margin:4px 0 0">${[['light','Light'],['dark','Dark'],['system','Match system']].map(([v, t]) =>
+        `<button type="button" role="radio" aria-checked="${theme === v}" class="${theme === v ? 'on' : ''}" data-theme-pick="${v}">${t}</button>`).join('')}</div>
+    </div>
+    <div class="panel">
+      <h3>Profile</h3>
+      <div class="cap">Shown at the bottom of the notes column.</div>
+      <div class="set-profile"><span class="me-av big" id="setAv"></span>
+        <input class="set-in" id="setName" maxlength="40" placeholder="Your name" autocomplete="off" value="${escHtml(p.name || '')}"></div>
+    </div>
+    <div class="panel">
+      <h3>Show on screen</h3>
+      <div class="cap">Hiding a part keeps everything in it — turn it back on and it's all there. The middle of the page stays where it is.</div>
+      ${SHOW.map(x => { const off = x.needs && h[x.needs];
+        return `<label class="set-row ${off ? 'off' : ''}"><span class="t"><b>${x.t}</b><span>${x.d}</span></span>
+          <input class="sw" type="checkbox" role="switch" data-show="${x.k}" ${!h[x.k] ? 'checked' : ''} ${off ? 'disabled' : ''}></label>`; }).join('')}
+      <div class="set-note">The side columns also step aside on narrow windows, whatever is set here.</div>
+    </div>
+    ${dataPanel()}`;
+  renderMe();
+  wireDataPanel();
+}
+document.getElementById('setBody').addEventListener('click', e=>{
+  const b = e.target.closest('[data-theme-pick]'); if (b) setTheme(b.dataset.themePick, centreOf(b));
+});
+document.getElementById('setBody').addEventListener('input', e=>{
+  if (e.target.id !== 'setName') return;
+  prefsWrite().name = e.target.value.trim();
+  if (!prefs().name) delete prefs().name;
+  renderMe(); save();
+});
+document.getElementById('setBody').addEventListener('change', e=>{
+  const k = e.target.dataset && e.target.dataset.show; if (!k) return;
+  const p = prefsWrite();
+  if (e.target.checked) delete p.hide[k]; else p.hide[k] = true;
+  save(); applyPrefs(); settleLayout();
+  renderSettings();                                        // e.g. Mind maps follows the Deadlines switch
+});
+function openSettings(){
+  renderSettings();
+  setScrim.classList.add('on'); setPanel.classList.add('on');
+  document.body.style.overflow = 'hidden';
+}
+function closeSettings(){
+  if (document.activeElement && setPanel.contains(document.activeElement)) document.activeElement.blur();
+  setScrim.classList.remove('on'); setPanel.classList.remove('on');
+  if (!sheet.classList.contains('on')) document.body.style.overflow = '';
+}
+['meBtn', 'gearBtn', 'setFab'].forEach(id => document.getElementById(id).addEventListener('click', openSettings));
+document.getElementById('setClose').addEventListener('click', closeSettings);
+setScrim.addEventListener('click', closeSettings);
+document.addEventListener('keydown', e=>{ if (e.key === 'Escape' && setPanel.classList.contains('on')) closeSettings(); });
+
+/* ============================================================
    DAY SHEET
    ============================================================ */
 const sheet  = document.getElementById('sheet');
@@ -5127,9 +5577,8 @@ function renderAnalytics(){
     el.innerHTML = `<div class="panel"><div class="empty">
         <div class="big">🌾</div>
         No completed days yet.<br>Day 1 scores tomorrow — analytics fills in from there.
-      </div></div>` + dataPanel();
+      </div></div>`;
     wireChartTips();
-    wireDataPanel();
     return;
   }
 
@@ -5160,7 +5609,7 @@ function renderAnalytics(){
           : thisWeek.failed ? `−${GYM_PENALTY} this week`
           : `${thisWeek.open} day${thisWeek.open===1?'':'s'} left`}</div></div>
       <div class="stat"><div class="k">Weight</div>
-        <div class="v" style="color:${wt.hit ? '#8A6420' : 'var(--ink)'}">${wt.latest ? wt.latest.v.toFixed(1) : '—'}<small> kg</small></div>
+        <div class="v" style="color:${wt.hit ? 'var(--gold)' : 'var(--ink)'}">${wt.latest ? wt.latest.v.toFixed(1) : '—'}<small> kg</small></div>
         <div class="sub">${!wt.latest ? 'no weigh-in yet'
           : wt.hit ? 'target reached'
           : `${KG(wt.toGo)} to go`}</div></div>
@@ -5200,11 +5649,9 @@ function renderAnalytics(){
     </div>
 
     ${weightPanel()}
-    ${hydrationPanel()}
-    ${dataPanel()}`;
+    ${hydrationPanel()}`;
 
   wireChartTips();
-  wireDataPanel();
 }
 
 /* ---- weight: the run to the target, and the title it earns ---- */
@@ -5233,7 +5680,7 @@ function weightPanel(){
       <span>${w.hit ? 'Target reached' : `${KG(w.lost)} down of ${KG(w.first - WEIGHT_TARGET)}`}</span>
       <b>${w.hit ? KG(w.latest.v) : KG(w.toGo) + ' to go'}</b>
     </div>
-    <div class="weigh-track"><i style="width:${w.pct.toFixed(1)}%;${w.hit ? 'background:#8A6420' : ''}"></i></div>
+    <div class="weigh-track"><i style="width:${w.pct.toFixed(1)}%;${w.hit ? 'background:var(--gold)' : ''}"></i></div>
     <div class="weigh-ends"><span>${KG(w.first)} start</span>
       <span class="go">${w.pct.toFixed(0)}% of the way</span>
       <span>${KG(WEIGHT_TARGET)} target</span></div>`;
@@ -5264,8 +5711,8 @@ function weightChart(all){
   }).join('');
 
   const ty = yOf(WEIGHT_TARGET);
-  const target = `<line x1="${P3.l}" y1="${ty}" x2="${W3-P3.r}" y2="${ty}" stroke="#8A6420" stroke-width="1.4" stroke-dasharray="5 5" opacity=".75"/>
-    <text x="${W3-P3.r}" y="${ty-5}" text-anchor="end" font-size="9.5" fill="#8A6420">target ${KG(WEIGHT_TARGET)}</text>`;
+  const target = `<line x1="${P3.l}" y1="${ty}" x2="${W3-P3.r}" y2="${ty}" stroke="var(--gold)" stroke-width="1.4" stroke-dasharray="5 5" opacity=".75"/>
+    <text x="${W3-P3.r}" y="${ty-5}" text-anchor="end" font-size="9.5" fill="var(--gold)">target ${KG(WEIGHT_TARGET)}</text>`;
 
   const segs = all.slice(1).map((p,i)=>{
     const a = all[i], skipped = dayDiff(p.date, a.date) > 8;
@@ -5279,7 +5726,7 @@ function weightChart(all){
     const tip = `${fmtLong(p.date)} · ${KG(p.v)}` + (diff === null ? ' · baseline'
       : ` · ${diff < 0 ? '−' : diff > 0 ? '+' : '±'}${Math.abs(diff).toFixed(1)} kg`);
     return `<circle class="pt" data-tip="${tip}" cx="${xOf(p.date)}" cy="${yOf(p.v)}" r="5"
-      fill="var(--surface)" stroke="${p.v <= WEIGHT_TARGET ? '#8A6420' : 'var(--ink-2)'}" stroke-width="2.6"
+      fill="var(--surface)" stroke="${p.v <= WEIGHT_TARGET ? 'var(--gold)' : 'var(--ink-2)'}" stroke-width="2.6"
       style="animation-delay:${300+i*70}ms;transform-origin:${xOf(p.date)}px ${yOf(p.v)}px"/>`;
   }).join('');
 
@@ -5330,8 +5777,8 @@ function hydrationChart(bars, dim, targetMl){
   return `<svg class="chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="height:110px">
     <line x1="${pad}" y1="${targetY}" x2="${w-pad}" y2="${targetY}" stroke="var(--line-2)" stroke-width="1.2" stroke-dasharray="4 5"/>
     <text x="${w-pad}" y="${targetY-4}" text-anchor="end" font-size="9.5" fill="var(--ink-3)">target ${targetMl.toLocaleString()} ml</text>
-    <line x1="${pad}" y1="${avgY}" x2="${w-pad}" y2="${avgY}" stroke="#8A6420" stroke-width="1.2" stroke-dasharray="2 3" opacity=".8"/>
-    <text x="${pad}" y="${avgY-4}" text-anchor="start" font-size="9.5" fill="#8A6420">avg ${avgMl.toLocaleString()} ml</text>
+    <line x1="${pad}" y1="${avgY}" x2="${w-pad}" y2="${avgY}" stroke="var(--gold)" stroke-width="1.2" stroke-dasharray="2 3" opacity=".8"/>
+    <text x="${pad}" y="${avgY-4}" text-anchor="start" font-size="9.5" fill="var(--gold)">avg ${avgMl.toLocaleString()} ml</text>
     <line x1="${pad}" y1="${h-18}" x2="${w-pad}" y2="${h-18}" stroke="var(--line)" stroke-width="1"/>
     ${segs}${dots}
     ${[1,8,15,22,dim].map(n=>`<text x="${pad+step*(n-0.5)}" y="${h-5}" text-anchor="middle" font-size="9" fill="var(--ink-3)">${n}</text>`).join('')}
@@ -5418,9 +5865,9 @@ function spendDayChart(r){
 }
 
 const zoneKey = () => `<div class="zone-key">
-    <span><i style="background:var(--good-soft);border:1px solid #D6E2CB"></i>Good · 60 to 100</span>
-    <span><i style="background:var(--mid-soft);border:1px solid #E9DCC2"></i>Moderate · 20 to 59</span>
-    <span><i style="background:var(--bad-soft);border:1px solid #EBD3CB"></i>Bad · below 20</span>
+    <span><i style="background:var(--good-soft);border:1px solid var(--good-line)"></i>Good · 60 to 100</span>
+    <span><i style="background:var(--mid-soft);border:1px solid var(--mid-line)"></i>Moderate · 20 to 59</span>
+    <span><i style="background:var(--bad-soft);border:1px solid var(--bad-line)"></i>Bad · below 20</span>
   </div>`;
 
 /* geometry shared by both charts */
@@ -5559,7 +6006,7 @@ function taskChart(series){
       <rect x="${lw}" y="${y}" width="${cw}" height="15" rx="7.5" fill="var(--bg-warm)"/>
       <rect class="bar-rect" data-tip="${r.t.label} · avg ${r.avg>0?'+':''}${r.avg.toFixed(1)} of ${r.t.bonus ? '0…+'+round1(r.t.pts) : '±'+round1(r.t.pts)}${r.n < series.length ? ` · ${r.n} of ${series.length} days` : ''}" x="${x}" y="${y}" width="${w}" height="15" rx="7.5" fill="${col}" opacity=".9"/>
       <text x="${lw-10}" y="${y+11.5}" text-anchor="end" font-size="11.5" fill="var(--ink-2)">${r.t.icon} ${r.t.label}</text>
-      <text x="${rw-6}" y="${y+11.5}" text-anchor="end" font-size="11" font-weight="600" fill="${r.avg>=0?'#5C7A4C':'#A9614F'}">${r.avg>0?'+':''}${r.avg.toFixed(1)}</text>`;
+      <text x="${rw-6}" y="${y+11.5}" text-anchor="end" font-size="11" font-weight="600" fill="${r.avg>=0?'var(--good-ink)':'var(--bad-ink)'}">${r.avg>0?'+':''}${r.avg.toFixed(1)}</text>`;
   }).join('');
   return `<svg class="chart" viewBox="0 0 ${rw} ${rh}" style="height:${rh*0.72}px">
     <line x1="${mid}" y1="2" x2="${mid}" y2="${rh-4}" stroke="var(--line-2)" stroke-width="1" stroke-dasharray="3 4"/>
@@ -5895,7 +6342,7 @@ function wireDataPanel(){
   on('csvImport', importCSV);
   on('csvNow', ()=> writeCsv(false).then(()=> toast('CSV written')));
 }
-function refreshCsvState(){ if (currentView === 'analytics') renderAnalytics(); }
+function refreshCsvState(){ if (document.getElementById('setPanel').classList.contains('on')) renderSettings(); }   // the CSV controls live in Settings
 
 /* ============================================================
    MISC
@@ -5939,6 +6386,7 @@ window.addEventListener('resize', ()=>{
   if (titleChipCap() !== chipsAt) renderTitle();
   movePill(); fitCalendar();
 });
+applyPrefs();
 renderCalendar();
 renderDeadlines();
 renderNotes();

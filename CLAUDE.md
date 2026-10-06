@@ -30,9 +30,12 @@ features, scoring, and folder layout. This file is the rules for changing it saf
   before it); rank rules changed on a date apply only from that date.
 - Money never enters the score. All money entry and reading lives in the 🏦 drawer.
 - Charts: validated categorical colours only (see `FIN_COLORS`); no dual axes.
+- Two themes: light (the original) and dark (`:root[data-theme="dark"]`). Style with the CSS
+  variables (`--surface`, `--ink`, `--good-ink`, `--hover`, `--on-ink`, …), not fixed hex; anything
+  that must carry its own colour needs a matching rule in the DARK THEME block. Check both.
 
 ## Code gotchas
-- `DB` is keyed by `YYYY-MM-DD` day entries plus reserved keys `_finance`, `_deposits`, `_deadlines`, `_notes` and `_mindmaps`.
+- `DB` is keyed by `YYYY-MM-DD` day entries plus reserved keys `_finance`, `_deposits`, `_deadlines`, `_notes`, `_mindmaps` and `_prefs`.
   Anything that walks `Object.keys(DB)` must skip non-day keys with `isDayKey(k)`.
 - `e.water` is millilitres (converted from 700 ml bottles on 14 Sep 2026).
 - Per-day max score comes from that day's scored parts, not the global `MAX_POINTS`.

@@ -40,7 +40,7 @@ Monthly Plan/
 ├── .gitignore            keeps data/ and every copy of the log out of git
 ├── .gitattributes        keeps the .bat on Windows line endings
 ├── data/                 (local only — never committed)
-│   ├── data.json         your log — the single source of truth
+│   ├── data.json         your log on the laptop — kept in step with the cloud copy
 │   └── data.backup.json  the previous save, refreshed every time
 └── icon/
     ├── icon.ico          app + desktop-shortcut icon
@@ -57,9 +57,10 @@ phone; the log reaches it through your private Firestore folder, never through t
 ## How it runs
 
 - `Monthly Plan.bat` finds a windowless Python (`pyw -3`, then known `pythonw.exe` paths), launches a tiny stdlib-only Python server (`server.py`) on `http://127.0.0.1:8731`, waits for the port, and opens the app full screen (`--start-fullscreen`; F11 toggles back to a window) in its own Chrome (or Edge) app window with a dedicated profile at `%LocalAppData%\MonthlyPlan\chrome` — isolated from normal browsing, so clearing browser data can never touch it.
-- `data/data.json` is the single source of truth — written atomically (temp file + replace) with a rolling backup copy beside it. The page pings the server every 20 s; the server shuts itself down 90 s after the pings stop (i.e. once the window closes). If the server is already running, a second launch just reuses it.
+- `data/data.json` is the laptop's copy of the log — written atomically (temp file + replace) with a rolling backup copy beside it. With sync on, the same log also lives in Firestore and the two are kept in step (see **Phone & sync**). The page pings the server every 20 s; the server shuts itself down 90 s after the pings stop (i.e. once the window closes). If the server is already running, a second launch just reuses it.
 - Server API: `GET /api/data` (the log, or `{}` on first run; `503` if the file is locked), `POST /api/data` (atomic overwrite, must be a JSON object), `GET /api/ping` (heartbeat), `POST /api/quit`. Everything else is served as static files from the app folder.
-- The page also mirrors the log to `localStorage` (`monthlyPlan.v1`). On load the file on disk wins; the browser copy is only used when the server is unreachable, or once — to seed an empty `data.json` on the first run after the move to disk.
+- The page also mirrors the log to `localStorage` (`monthlyPlan.v1`). On load the file on disk wins; the browser copy is only used when the server is unreachable, or once — to seed an empty `data.json` on the first run after the move to disk. Once signed in, the cloud's copy is merged in on top and written back to disk.
+- On the phone (served from GitHub Pages, so no server and no `data.json`) the log lives in `localStorage` and Firestore's copy on the device, and syncs through the cloud. Only the launcher's own address (`127.0.0.1` / `localhost`) uses `/api/data`.
 - Older versions kept the log next to `server.py`. On startup the server moves any `data.json` still found there into `data/` if it's newer (the copy it replaces becomes the backup), or keeps it aside as `data/data.old-root-<timestamp>.json` if it's older — nothing is ever deleted.
 - If Python or the server isn't available, the app falls back to opening as a plain `file://` page backed by `localStorage`, so it still works, just without durable file storage.
 
@@ -77,7 +78,7 @@ phone; the log reaches it through your private Firestore folder, never through t
   ```
   The web config in `index.html` is not a secret; the sign-in and these rules are what keep the log private.
 - **The phone layout.** Under 640 px wide the app turns into pages picked from a bar at the bottom: **Today** (the day sheet, always on today), **Calendar** (tap a day to open it), **Notes**, **Deadlines** (mind maps below them, to look at only — drag to pan, pinch to zoom) and **More** (money, journal, analytics, rank, dark mode, settings). The flip clock and Focus stay on the laptop.
-- **Installing.** Hosted on GitHub Pages, opened in Chrome on the phone → ⋮ → *Add to home screen* / *Install app*. `sw.js` keeps an offline copy of the page; the page is fetched fresh whenever there's a connection, so pushed changes arrive on the next open.
+- **Installing.** Hosted on GitHub Pages, opened in Chrome on the phone → ⋮ → *Install* (pick *Install*, not *Create shortcut*, if Chrome asks); it then opens full screen from its own icon. `sw.js` keeps an offline copy of the page; the page is fetched fresh whenever there's a connection, so pushed changes arrive on the next open.
 - **Trying it safely.** `?demo=1&cloud=1` syncs the demo's sample data through the real Firebase, to `users/{uid}/demo` — apart from the real log.
 
 ## Daily tasks and points
@@ -130,7 +131,7 @@ Tasks added mid-run carry a start date (`since`). On days before it they show fa
   The **Deadline** dropdown links the map to one deadline, which becomes the map's main topic — its title in the centre and its date on the centre (the only date on a map). The linked deadline's card shows a **◈ Map** chip that opens it. Maps are saved while they exist; **Delete map** (two taps) removes one for good, and a new map closed without any text is discarded. Never scored.
 - **Flip clock** — a 24-hour flip clock (13:05, no AM/PM) under the calendar on the left. Click it and it grows out of its spot into a big flip clock centred on an empty screen (it keeps flipping each minute; with the mouse still, the cursor and hint fade so only the clock shows); click anywhere or press Esc and it shrinks back. The minute card's top half falls to reveal each new minute. It sits outside the calendar's fitted height, so it never shrinks the grid; it shows when there's room below (full screen) and hides itself otherwise.
 - **Focus (🌲)** — a tile beside the flip clock opens a Forest-style focus timer: the screen turns green with a tree in a ring at the centre. Drag the ring to set 10–120 min (scroll or arrow keys work too) and press **Plant**. Every session grows a different tree (generated from a random seed): a sprout, then a trunk that draws itself upward and thickens, branches splitting off in turn, leaves popping in along them, and pink blossoms at the end — all swaying gently while the ring fills. The window title shows the countdown. **Give up** (two taps) withers it: the leaves fall and a bare tree is left; finishing plays a soft chime. Nothing is recorded — it lives only on screen.
-- **Settings (⚙)** — a profile bar at the bottom of the notes column shows your name with an initials avatar and a gear. A sun/moon button beside the gear flips between light and dark — the new theme spreads out in a circle from the button you pressed (a View Transition: the browser animates a snapshot of the page, so gradients and all change together; a system-driven switch crossfades, and reduced motion switches instantly). The gear opens Settings: **Appearance** (Light — the original look — Dark, or Match system, which follows Windows), **Profile** (your name), **Show on screen** (switch the Notes column, Deadlines, Mind maps, flip clock and Focus tile on or off — Deadlines and Mind maps are the two halves of the right column and switch independently, the one left filling the column; hiding a part keeps its data, and its space stays empty so the middle of the page never moves), and **Data & backups** (where the log lives, plus the CSV link and Export/Import, moved here from Analytics). With the notes column hidden, a small gear sits in the bottom-left corner. Preferences are saved with the log.
+- **Settings (⚙)** — a profile bar at the bottom of the notes column shows your name with an initials avatar and a gear. A sun/moon button beside the gear flips between light and dark — the new theme spreads out in a circle from the button you pressed (a View Transition: the browser animates a snapshot of the page, so gradients and all change together; a system-driven switch crossfades, and reduced motion switches instantly). The gear opens Settings: **Sync** (sign in with Google, and whether this device is synced, sending, or offline), **Appearance** (Light — the original look — Dark, or Match system, which follows Windows), **Profile** (your name), **Show on screen** (switch the Notes column, Deadlines, Mind maps, flip clock and Focus tile on or off — Deadlines and Mind maps are the two halves of the right column and switch independently, the one left filling the column; hiding a part keeps its data, and its space stays empty so the middle of the page never moves), and **Data & backups** (where the log lives, plus the CSV link and Export/Import, moved here from Analytics). With the notes column hidden, a small gear sits in the bottom-left corner. Preferences are saved with the log (so they sync too). On the phone, Settings opens from **More** and leaves out Show on screen and Data & backups, which only mean something on the laptop.
 - **Sticky notes** — on windows 1500 px or wider, a 290 px light-orange rail on the left edge holds free-form notes, newest first. **+** starts one; type straight in. A small toolbar (bold, italic, underline, strikethrough, bulleted list) appears while writing, and Ctrl+B/I/U work too. Drag a note by its coloured top bar to move it — the others slide aside to open the slot, and the order is saved. Each note's **···** menu changes its colour (sand, butter, sage, clay, mist) or deletes it (two taps). Notes save as you type; pasting brings in plain text only, and saved HTML is cleaned to those few formatting tags — no images. Never scored.
 - **Analytics view** — daily score chart, weekly average with the gym quota table, "Where the points go" per-task breakdown, weight progress, and hydration. (Spending moved to the 🏦 drawer.)
 - **Hydration panel** — total water logged all-time and per month, with a line graph of each month's daily ml, a dashed target line (3.0 L), and a dashed line at that month's average.
@@ -149,14 +150,16 @@ Tasks added mid-run carry a start date (`since`). On days before it they show fa
 - **Unscored tracks with titles instead of points.** Weekly body-weight and daily spending are deliberately kept *outside* the score — logged, charted, and totaled, but never penalized. Each earns a title instead:
   - Weight (latest weigh-in, toward `WEIGHT_TARGET`): Unforged → Kindled → Tempered → Ironclad → Ascendant.
   - Spending (average over the last 7 logged days, against `MONEY_BUDGET`): Spendthrift → Steward → Warden → Ironpurse → Vaultkeeper.
-- **Everything is a pure function of the log.** No derived state (rank, level, titles) is stored anywhere — it's all recomputed from `data/data.json` on load, so editing a past day is always safe and correctly rewrites everything downstream.
+- **Everything is a pure function of the log.** No derived state (rank, level, titles) is stored anywhere — it's all recomputed from the log on load, so editing a past day is always safe and correctly rewrites everything downstream.
 - **Demo mode.** Visiting with `?demo=1` loads sample data from a completely separate storage key — the real log is never read or written while demoing.
 
 ## Data & backups
 
 All of these live in the `data/` folder.
 
-- `data.json` — the live log (source of truth). Each day stores its checks, `water` (ml), `sleep` (hours), `money` (LKR), `big` purchases, `gym` (true/false), and `weight` (kg, weigh-in days only), and `note` (the journal page; absent when empty). Monthly income and credit card amounts live under a separate `_finance` key, grouped by month (`"2026-09": { income:[{date, amt, note}], card }`), fixed deposits under `_deposits` (`[{bank, amt}]`), deadlines under `_deadlines` (`[{id, title, due, note?, status: open|done|cancelled, added, closed?}]`), sticky notes under `_notes` (`[{id, html, color, updated}]`), and mind maps under `_mindmaps` (`[{id, root:{id, text, done?, collapsed?, children}, deadline?, updated}]`). UI preferences (theme, name, what's shown) live under `_prefs` (`{theme?: 'dark'|'system', name?, hide:{notes?, deadlines?, mindmaps?, clock?, focus?}}`; no theme = light). The theme is also mirrored to `localStorage` (`monthlyPlan.theme`) so the page can apply it before its first paint. Restoring from a CSV keeps all six.
+The cloud copy (Firestore, one document per key — see **Phone & sync**) holds the same log; these files are the laptop's own copies of it.
+
+- `data.json` — the live log on the laptop. Each day stores its checks, `water` (ml), `sleep` (hours), `money` (LKR), `big` purchases, `gym` (true/false), and `weight` (kg, weigh-in days only), and `note` (the journal page; absent when empty). Monthly income and credit card amounts live under a separate `_finance` key, grouped by month (`"2026-09": { income:[{date, amt, note}], card }`), fixed deposits under `_deposits` (`[{bank, amt}]`), deadlines under `_deadlines` (`[{id, title, due, note?, status: open|done|cancelled, added, closed?}]`), sticky notes under `_notes` (`[{id, html, color, updated}]`), and mind maps under `_mindmaps` (`[{id, root:{id, text, done?, collapsed?, children}, deadline?, updated}]`). UI preferences (theme, name, what's shown) live under `_prefs` (`{theme?: 'dark'|'system', name?, hide:{notes?, deadlines?, mindmaps?, clock?, focus?}}`; no theme = light). The theme is also mirrored to `localStorage` (`monthlyPlan.theme`) so the page can apply it before its first paint. Restoring from a CSV keeps all six.
 - `data.backup.json` — automatic previous-copy backup, refreshed on every save.
 - `data.corrupt-<timestamp>.json` — only if `data.json` contains invalid JSON is it quarantined here, rather than silently discarded. A file that is merely *locked* for a moment (cloud sync, antivirus) is not treated as damaged: the server retries for ~2.5 s, and if it still can't open it the app says so and leaves `data.json` untouched for that session instead of overwriting it with the browser's copy.
 - A linked CSV copy (optional, e.g. on Google Drive) serves as a portable, human-readable spare. Importing an old CSV that only has a `water_bottles` column converts it at 700 ml per bottle.
@@ -165,22 +168,29 @@ All of these live in the `data/` folder.
 
 Read `CLAUDE.md` first — it holds the rules for changing the app safely (live data, demo-only testing, the viewport the day sheet must fit, design rules).
 
-`index.html` is one file: CSS (~lines 13–682), markup, then one inline `<script>` (~lines 792–3541). The script is organised in banner-commented sections, in this order:
+`index.html` is one file: a tiny theme script in `<head>`, the CSS (~lines 20–1500, ending with the DARK THEME and PHONE blocks), the markup, then the main inline `<script>` (~lines 1820–6850) and a small `<script type="module">` for Firebase at the very end. CSS and script are both organised in banner-commented sections; the script's, in order:
 
 | Section | What lives there |
 |---|---|
-| CONFIG | reads `window.MONTHLY_PLAN_CONFIG` from `config.local.js`, else neutral examples: `START`, `HYG_SINCE`, `JOURNAL_SINCE`, `LEGACY_GYM_IDS`, the `TASKS` array (id, group, label, points, `since`, gym/rest variants), `MONEY_BUDGET`, `WEIGHT_START` / `WEIGHT_TARGET`; plus fixed tuning: `WATER_TARGET_ML`, `SLEEP_LO/HI/FALLOFF` (6 / 8 / 1.5 h), `GYM_TARGET` / `GYM_PENALTY` (4 / 5), `ZONE_GOOD` / `ZONE_MID` (60 / 20), `FIN_COLORS` |
+| CONFIG | reads `window.MONTHLY_PLAN_CONFIG` from `config.local.js` (or, on the phone, the copy the cloud sent), else neutral examples: `START`, `HYG_SINCE`, `JOURNAL_SINCE`, `LEGACY_GYM_IDS`, the `TASKS` array (id, group, label, points, `since`, gym/rest variants), `MONEY_BUDGET`, `WEIGHT_START` / `WEIGHT_TARGET`; plus fixed tuning: `WATER_TARGET_ML`, `SLEEP_LO/HI/FALLOFF` (6 / 8 / 1.5 h), `GYM_TARGET` / `GYM_PENALTY` (4 / 5), `ZONE_GOOD` / `ZONE_MID` (60 / 20), `FIN_COLORS` |
 | DATE HELPERS | local-time date math (no UTC), `key()` → `YYYY-MM-DD` |
-| STORAGE | `load()` / `save()`, disk sync via `/api/data`, heartbeat, `localStorage` mirror, corrupt-blob rescue |
-| CLOUD SYNC | `CLOUD` state, `cloudMerge` (first copy in), `cloudDocs` (changes in), `cloudPush` (changes out), `cloudConfig`, the Sync card; the Firebase calls are the `<script type="module">` at the end (`firebaseCloud`), which tests replace with `window.MP_CLOUD_TEST` |
-| PHONE | `phoneApply` / `phoneTab` (the bottom bar's pages), `renderPMore`; layout in the PHONE block at the end of the CSS |
+| STORAGE | `load()` / `save()`, disk sync via `/api/data` (laptop only), heartbeat, `localStorage` mirror, corrupt-blob rescue |
+| CLOUD SYNC | `CLOUD` state, `cloudMerge` (first copy in), `cloudDocs` (changes in), `cloudPush` (changes out), `cloudConfig`, the Sync card |
 | DEMO SEED | deterministic sample history for `?demo=1` |
 | SCORING | `waterScore`, `sleepScore`, `scoreDay`, `gymWeek` (Mon–Sun weeks), `finalScore` (only for days that have ended) |
 | RANK & LEVEL | `RANK_FLOOR`, window/confirm/grace constants, hygiene and gym gates, `TITLE_TRACKS` (spending + weight ladders), `levelState` |
-| TABS / CALENDAR / DAY SHEET / ANALYTICS | rendering for each view, the 🏦 finances drawer, the 📖 journal notepad (`openJournal`, `jrTurn` page flips), the deadlines rail and manager (`renderDeadlines`, `openDeadlines`), the sticky-notes rail (`renderNotes`, `snClean`), and the rank/title detail drawer |
+| TABS / CALENDAR | view switching, the month grid, the 🏦 finances drawer, the 📖 journal notepad (`openJournal`, `jrTurn` page flips), and the rank/title detail drawer |
+| FLIP CLOCK / FOCUS | the 24-hour clock and its full-screen version; the Forest-style focus timer |
+| STICKY NOTES / DEADLINES / MIND MAPS | the two rails (`renderNotes`, `renderDeadlines`, `openDeadlines`) and the mind map window (`openMindmap`, `mmLayout`, `mmRender`) |
+| SETTINGS | `_prefs`, the profile bar, the ⚙ panel, light/dark (`applyTheme`, `setTheme`) |
+| DAY SHEET | `openSheet`, `renderSheetBody` and the counters (water, money, weight, sleep) |
+| ANALYTICS | charts and panels |
 | CSV | File System Access link (handle kept in IndexedDB `monthlyPlanFS`), export / import |
+| MISC | toast, demo bar, start-up and the midnight rollover |
+| PHONE | `phoneApply` / `phoneTab` (the bottom bar's pages), `renderPMore`; its layout is the PHONE block at the end of the CSS |
+| FIREBASE (module) | `firebaseCloud` — sign-in, the Firestore listener and writes, behind the small interface CLOUD SYNC uses; tests hand in `window.MP_CLOUD_TEST` instead |
 
-Other storage keys: `monthlyPlan.demo.v1` (demo log), `<store key>.rank` (last rank seen, used for the one-time "Rank up / Rank down" toast — kept out of the log on purpose).
+Other storage keys (kept out of the log on purpose): `monthlyPlan.demo.v1` (demo log), `<store key>.rank` (last rank seen, for the one-time "Rank up / Rank down" toast), `<store key>.cloudUid` (this device has synced with that account before), `monthlyPlan.theme` (the theme, applied before first paint), `monthlyPlan.config` (the phone's copy of your settings), `monthlyPlan.start` (day one, when no `START` is configured).
 
 To add a task: append it to `TASKS` in your `config.local.js` with `since:'YYYY-MM-DD'` (the day it starts counting), then reload. Don't change `pts` on an existing task without a dated rule — past scores are recomputed from the log, so an undated change rewrites history.
 
@@ -196,6 +206,10 @@ To add a task: append it to `TASKS` in your `config.local.js` with `since:'YYYY-
 | 2 Oct 2026 | Deadlines added: yellow rail on the right and a ＋ drawer for adding and history; stored under `_deadlines`, never scored. |
 | 2 Oct 2026 | Sticky notes added: light-orange rail on the left (≥1500 px), stored under `_notes`, never scored. Calendar cell also fits the room between the rails. |
 | 2 Oct 2026 | Side rails widened to 290 px; app opens full screen; 24-hour flip clock under the calendar. |
+| 2 Oct 2026 | Repo made public: personal settings moved to the git-ignored `config.local.js`. Focus timer with a growing tree; notes reorder by dragging. |
+| 4 Oct 2026 | Mind maps added as the lower half of the deadlines rail, stored under `_mindmaps`, never scored. |
+| 5 Oct 2026 | Mind maps redesigned: one mode, tapered branches, spring motion, undo/redo; rails show whole tiles only. |
+| 6 Oct 2026 | Settings (profile, show/hide parts, data & backups) under `_prefs`; dark theme; the flip clock opens full screen. |
 | 7 Oct 2026 | Sync through Firebase (Google sign-in, Firestore); the log moved to the cloud with `data.json` kept as the laptop's backup. Phone layout and installable app (GitHub Pages, `manifest.webmanifest`, `sw.js`). |
 
 ## License

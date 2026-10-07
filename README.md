@@ -19,6 +19,8 @@ You need **Windows**, **Python 3** (from python.org — the server uses only the
 3. Double-click `Monthly Plan.bat` (make a desktop shortcut to it if you like). It starts the local server and opens the app full screen — **F11** switches to a window.
 4. Try `index.html?demo=1` to look around with made-up data; it never touches your log.
 
+Sync between devices uses the Firebase project named in `FIREBASE_CONFIG` near the end of `index.html`. To sync your own copy, make your own Firebase project (Google sign-in + Firestore, rules below) and put its config there; to run laptop-only, leave it — nothing syncs until you sign in.
+
 The currency is LKR — to change it, search `index.html` for `LKR`. On macOS or Linux there's no launcher: run `python3 server.py` and open `http://127.0.0.1:8731/index.html`. Your log is written to `data/data.json`, which is git-ignored too.
 
 ## Folder layout
@@ -28,6 +30,8 @@ Monthly Plan/
 ├── Monthly Plan.bat      launcher (the desktop shortcut runs this)
 ├── server.py             local server that reads and writes the log
 ├── index.html            the whole app
+├── manifest.webmanifest  makes it installable on a phone (icon, full screen)
+├── sw.js                 the phone's offline copy of the app
 ├── config.example.js     template for your own settings — copy it to config.local.js
 ├── config.local.js       (local only — never committed) your day one, tasks, points, targets
 ├── LICENSE               MIT
@@ -41,12 +45,14 @@ Monthly Plan/
 └── icon/
     ├── icon.ico          app + desktop-shortcut icon
     ├── icon-192.png      large app icon
+    ├── icon-512.png      install icon
+    ├── maskable-192/512.png  install icon Android can crop to its own shape
     └── favicon-16/32/48.png  window / tab icons
 ```
 
 Only the app is tracked in git. Your log (`data/`) and your settings (`config.local.js`) are
-git-ignored, so they never leave your machine through git. GitHub Pages is not a good host: it
-can't run `server.py`, so the app would fall back to browser-only storage.
+git-ignored, so they never leave your machine through git. GitHub Pages hosts the app for the
+phone; the log reaches it through your private Firestore folder, never through the repo.
 
 ## How it runs
 
@@ -56,6 +62,23 @@ can't run `server.py`, so the app would fall back to browser-only storage.
 - The page also mirrors the log to `localStorage` (`monthlyPlan.v1`). On load the file on disk wins; the browser copy is only used when the server is unreachable, or once — to seed an empty `data.json` on the first run after the move to disk.
 - Older versions kept the log next to `server.py`. On startup the server moves any `data.json` still found there into `data/` if it's newer (the copy it replaces becomes the backup), or keeps it aside as `data/data.old-root-<timestamp>.json` if it's older — nothing is ever deleted.
 - If Python or the server isn't available, the app falls back to opening as a plain `file://` page backed by `localStorage`, so it still works, just without durable file storage.
+
+## Phone & sync
+
+- **One log, two devices.** Signed in with Google (Settings → Sync, once per device — it stays signed in), every key of the log is its own Firestore document at `users/{uid}/db/{key}`, holding the value as JSON text. A change on one device reaches the other in a second or two. Keys merge one by one: the latest change to a day wins, and a change to a different day never touches it.
+- **Offline.** Firestore keeps a copy on the device: the app opens without signal and sends queued changes once it's back online. On the laptop `data/data.json` is still written on every change, as a local backup of the same log.
+- **First sign-in on a device.** The cloud's copy wins; keys only that device has are sent up. On the very first sign-in (an empty cloud) the whole log goes up.
+- **Settings travel too.** The phone has no `config.local.js` (it is never published), so the laptop sends its settings to `users/{uid}/meta/config`; the phone keeps the latest copy (`localStorage` `monthlyPlan.config`) and restarts once when it changes.
+- **Firestore rules** (Firebase console → Firestore → Rules) — each account reaches only its own folder:
+  ```
+  match /users/{uid}/{document=**} {
+    allow read, write: if request.auth != null && request.auth.uid == uid;
+  }
+  ```
+  The web config in `index.html` is not a secret; the sign-in and these rules are what keep the log private.
+- **The phone layout.** Under 640 px wide the app turns into pages picked from a bar at the bottom: **Today** (the day sheet, always on today), **Calendar** (tap a day to open it), **Notes**, **Deadlines** (mind maps below them, to look at only — drag to pan, pinch to zoom) and **More** (money, journal, analytics, rank, dark mode, settings). The flip clock and Focus stay on the laptop.
+- **Installing.** Hosted on GitHub Pages, opened in Chrome on the phone → ⋮ → *Add to home screen* / *Install app*. `sw.js` keeps an offline copy of the page; the page is fetched fresh whenever there's a connection, so pushed changes arrive on the next open.
+- **Trying it safely.** `?demo=1&cloud=1` syncs the demo's sample data through the real Firebase, to `users/{uid}/demo` — apart from the real log.
 
 ## Daily tasks and points
 
@@ -149,6 +172,8 @@ Read `CLAUDE.md` first — it holds the rules for changing the app safely (live 
 | CONFIG | reads `window.MONTHLY_PLAN_CONFIG` from `config.local.js`, else neutral examples: `START`, `HYG_SINCE`, `JOURNAL_SINCE`, `LEGACY_GYM_IDS`, the `TASKS` array (id, group, label, points, `since`, gym/rest variants), `MONEY_BUDGET`, `WEIGHT_START` / `WEIGHT_TARGET`; plus fixed tuning: `WATER_TARGET_ML`, `SLEEP_LO/HI/FALLOFF` (6 / 8 / 1.5 h), `GYM_TARGET` / `GYM_PENALTY` (4 / 5), `ZONE_GOOD` / `ZONE_MID` (60 / 20), `FIN_COLORS` |
 | DATE HELPERS | local-time date math (no UTC), `key()` → `YYYY-MM-DD` |
 | STORAGE | `load()` / `save()`, disk sync via `/api/data`, heartbeat, `localStorage` mirror, corrupt-blob rescue |
+| CLOUD SYNC | `CLOUD` state, `cloudMerge` (first copy in), `cloudDocs` (changes in), `cloudPush` (changes out), `cloudConfig`, the Sync card; the Firebase calls are the `<script type="module">` at the end (`firebaseCloud`), which tests replace with `window.MP_CLOUD_TEST` |
+| PHONE | `phoneApply` / `phoneTab` (the bottom bar's pages), `renderPMore`; layout in the PHONE block at the end of the CSS |
 | DEMO SEED | deterministic sample history for `?demo=1` |
 | SCORING | `waterScore`, `sleepScore`, `scoreDay`, `gymWeek` (Mon–Sun weeks), `finalScore` (only for days that have ended) |
 | RANK & LEVEL | `RANK_FLOOR`, window/confirm/grace constants, hygiene and gym gates, `TITLE_TRACKS` (spending + weight ladders), `levelState` |
@@ -171,6 +196,7 @@ To add a task: append it to `TASKS` in your `config.local.js` with `since:'YYYY-
 | 2 Oct 2026 | Deadlines added: yellow rail on the right and a ＋ drawer for adding and history; stored under `_deadlines`, never scored. |
 | 2 Oct 2026 | Sticky notes added: light-orange rail on the left (≥1500 px), stored under `_notes`, never scored. Calendar cell also fits the room between the rails. |
 | 2 Oct 2026 | Side rails widened to 290 px; app opens full screen; 24-hour flip clock under the calendar. |
+| 7 Oct 2026 | Sync through Firebase (Google sign-in, Firestore); the log moved to the cloud with `data.json` kept as the laptop's backup. Phone layout and installable app (GitHub Pages, `manifest.webmanifest`, `sw.js`). |
 
 ## License
 

@@ -12,6 +12,9 @@ features, scoring, and folder layout. This file is the rules for changing it saf
   the never-rewrite-history rules below when you do.
 - Test only with `index.html?demo=1` (separate storage key; nothing touches disk). Real-data
   checks must be read-only.
+- The log is also live in Firestore (`users/{uid}/db`), synced to the user's phone. A bad write
+  there reaches every device — test sync only with a fake (`window.MP_CLOUD_TEST`, see README)
+  or `?demo=1&cloud=1` (sample data, kept under `users/{uid}/demo`).
 - The app is served by `server.py` on `127.0.0.1:8731` (started by `Monthly Plan.bat`). After
   changing `server.py`, the running server keeps the old code until the app window is closed
   and reopened — tell the user.
@@ -19,6 +22,8 @@ features, scoring, and folder layout. This file is the rules for changing it saf
 ## Verifying changes
 - UI changes: drive headless Chrome over DevTools (`--remote-debugging-port`) against
   `?demo=1`, use a throwaway `--user-data-dir`, measure, screenshot, then close it.
+- Phone: under 640 px the PHONE layout takes over (S25 ≈ 360×780 CSS px). Check phone changes
+  at that size, in both themes, with touch emulation.
 - The user's display is 125% scaled: viewport ≈ 1536×795 CSS px. The day sheet must fit that
   without scrolling.
 - Syntax-check the inline script after edits (extract `<script>` and `new Function(...)`).

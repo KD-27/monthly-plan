@@ -14,6 +14,9 @@ try { var t = localStorage.getItem('monthlyPlan.theme');
 <link rel="icon" href="icon/icon.ico" sizes="any" />
 <link rel="icon" type="image/png" sizes="192x192" href="icon/icon-192.png" />
 <link rel="apple-touch-icon" href="icon/icon-192.png" />
+<!-- installable on a phone: home-screen icon, full screen, opens offline (sw.js) -->
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#FBF7F0" />
 <style>
 /* ============================================================
    PALETTE — calm beige
@@ -1404,6 +1407,99 @@ body.cal-view .app{ width:max-content; max-width:100%; }
 ::view-transition-group(root){ animation-duration:.42s; animation-timing-function:cubic-bezier(.4,0,.2,1); }
 :root.vt-reveal::view-transition-old(root), :root.vt-reveal::view-transition-new(root){ animation:none; mix-blend-mode:normal; }
 :root.vt-reveal::view-transition-new(root){ z-index:2; }
+/* ============================================================
+   PHONE — one page at a time, picked from a bar at the bottom
+   ============================================================ */
+.ptabs, .pmore{ display:none; }
+:root.phone{ --ptabs:calc(62px + env(safe-area-inset-bottom)); }
+:root.phone body{ padding:0 0 var(--ptabs); -webkit-tap-highlight-color:transparent; }
+:root.phone .ptabs{ display:flex; position:fixed; left:0; right:0; bottom:0; z-index:45; height:var(--ptabs);
+  padding:0 4px env(safe-area-inset-bottom); background:var(--surface); border-top:1px solid var(--line);
+  box-shadow:0 -8px 24px rgba(74,65,55,.06); }
+.ptabs button{ flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+  font-size:11px; font-weight:600; color:var(--ink-3); transition:color .2s; }
+.ptabs .pi{ width:54px; height:30px; border-radius:99px; display:grid; place-items:center; transition:background-color .25s var(--ease); }
+.ptabs svg{ width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round;
+  transition:transform .3s var(--spring); }
+.ptabs button[aria-selected="true"]{ color:var(--ink); }
+.ptabs button[aria-selected="true"] .pi{ background:var(--hover); }
+.ptabs button:active svg{ transform:scale(.88); }
+
+/* what each page shows */
+:root.phone .sn-rail, :root.phone .dl-rail, :root.phone .set-fab, :root.phone .dock,
+:root.phone #tabs, :root.phone .titlebar, :root.phone .set-show{ display:none !important; }
+:root.phone .app{ display:none; padding:calc(14px + env(safe-area-inset-top)) 14px 22px; }
+:root.phone[data-ptab="calendar"] .app, :root.phone[data-ptab="analytics"] .app{ display:block; }
+:root.phone .page-in{ animation:pageIn .26s var(--ease-out) both; }
+@keyframes pageIn{ from{ opacity:0; transform:translateY(6px); } to{ opacity:1; transform:none; } }
+
+/* Today: the day sheet is the page */
+:root.phone #sheet.as-page{ top:0; bottom:var(--ptabs); height:auto; border:0; border-radius:0; box-shadow:none; transform:none; transition:none; z-index:20; }
+:root.phone #sheet.as-page #btnClose{ display:none; }
+:root.phone .day-head{ padding:calc(14px + env(safe-area-inset-top)) 16px 12px; }
+:root.phone .day-head h2{ font-size:18px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+:root.phone .score-top .tag{ display:none; }
+:root.phone .score-top .num{ font-size:24px; }
+:root.phone .group{ padding:10px 16px 2px; }
+:root.phone .sheet-foot{ padding:10px 16px; }
+:root.phone .sheet-foot .day-jr{ width:40px; height:40px; font-size:20px; }
+
+/* the counters: name left to the icon, and what doesn't fit wraps under */
+:root.phone .tracker .hd{ flex-wrap:wrap; row-gap:8px; }
+:root.phone .tracker .hd .nm{ display:none; }
+:root.phone .money-month{ flex-basis:100%; margin-left:0; text-align:right; }
+:root.phone .tracker .w-total{ width:60px; }
+:root.phone .w-add .big-amt{ width:52px; }
+:root.phone .day-head .dayno{ white-space:nowrap; }
+
+/* Calendar */
+:root.phone{ --gap:5px; --cell:min(46px, calc((100vw - 76px) / 7)); }
+:root.phone .topbar{ gap:10px; margin-bottom:14px; }
+:root.phone .brand{ gap:8px; }
+:root.phone #view-calendar.is-active{ width:auto; display:block; }
+:root.phone .month-summary{ grid-template-columns:1fr 1fr; }
+:root.phone .demo-bar{ border-radius:var(--r-lg); font-size:12.5px; padding:10px 14px; }
+
+/* Notes and Deadlines: the side columns, full width, scrolling as one page */
+:root.phone[data-ptab="notes"] .sn-rail, :root.phone[data-ptab="deadlines"] .dl-rail{ display:flex !important; position:fixed;
+  top:0; left:0; right:0; bottom:var(--ptabs); width:auto; border:0; box-shadow:none; z-index:20; padding-top:env(safe-area-inset-top); }
+:root.phone .sn-foot{ display:none; }
+:root.phone .sn-rail-head, :root.phone .dl-rail-head{ padding:18px 16px 12px 18px; }
+:root.phone .sn-rail-ttl, :root.phone .dl-rail-ttl{ font-size:13px; }
+:root.phone .sn-new, :root.phone .dl-icon{ width:38px; height:38px; }
+:root.phone .sn-bar{ touch-action:none; }                     /* drag a note by its bar; scroll by the rest */
+:root.phone .dl-rail{ overflow-y:auto; overscroll-behavior:contain; }
+:root.phone .dl-rail .rail-sec{ display:flex !important; flex:none; border-top-width:1px; }
+:root.phone .dl-rail .rail-sec .dl-rail-list{ max-height:none !important; overflow:visible; scroll-snap-type:none; flex:none; }
+:root.phone .dl-rail .rail-sec.mm-sec{ flex:1 0 auto; }
+:root.phone #mmNew{ display:none; }
+
+/* More */
+:root.phone[data-ptab="more"] .pmore{ display:block; }
+.pmore{ padding:calc(18px + env(safe-area-inset-top)) 16px 24px; }
+.pm-me{ width:100%; display:flex; align-items:center; gap:14px; padding:14px 16px; text-align:left; background:var(--surface);
+  border:1px solid var(--line); border-radius:var(--r-lg); box-shadow:var(--shadow-sm); }
+.pm-me .t b{ display:block; font-size:17px; font-weight:650; }
+.pm-me .t span{ font-size:13px; color:var(--ink-3); }
+.pm-list{ margin-top:14px; background:var(--surface); border:1px solid var(--line); border-radius:var(--r-lg); overflow:hidden; box-shadow:var(--shadow-sm); }
+.pm-row{ width:100%; display:flex; align-items:center; gap:14px; padding:13px 16px; text-align:left; border-top:1px solid var(--line); cursor:pointer; }
+.pm-row:first-child{ border-top:0; }
+.pm-row:active, .pm-me:active{ background:var(--hover); }
+.pm-row .ic{ width:38px; height:38px; border-radius:12px; display:grid; place-items:center; background:var(--surface-2); border:1px solid var(--line); font-size:19px; flex:none; }
+.pm-row .t{ flex:1; min-width:0; }
+.pm-row .t b{ display:block; font-size:15px; font-weight:600; }
+.pm-row .t span{ font-size:12.5px; color:var(--ink-3); }
+.pm-row .chev{ color:var(--ink-3); flex:none; }
+
+/* the drawers: full height, so nothing peeks out above them */
+:root.phone .sheet:not(.as-page){ height:calc(100dvh - 18px); }
+:root.phone .toast{ bottom:calc(var(--ptabs) + 14px); }
+
+/* mind maps: full screen, to look at only */
+:root.phone .mm{ inset:0; border-radius:0; }
+:root.phone .mm-tools, :root.phone #mmDel, :root.phone .mm-link, :root.phone .mm-help{ display:none !important; }
+:root.phone .mm-node{ cursor:inherit; }
+:root[data-theme="dark"].phone .ptabs{ box-shadow:0 -8px 24px rgba(0,0,0,.3); }
 </style>
 </head>
 <body>
@@ -1512,6 +1608,15 @@ body.cal-view .app{ width:max-content; max-width:100%; }
   </section>
 </aside>
 
+<!-- phone: one page at a time, picked from the bar at the bottom -->
+<section class="pmore" id="pMore" aria-label="More"></section>
+<nav class="ptabs" id="pTabs" aria-label="Pages">
+  <button type="button" data-ptab="today"><span class="pi"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M8.3 12.4l2.6 2.6 5-5.2"/></svg></span><span>Today</span></button>
+  <button type="button" data-ptab="calendar"><span class="pi"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></span><span>Calendar</span></button>
+  <button type="button" data-ptab="notes"><span class="pi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 4h13a1.5 1.5 0 0 1 1.5 1.5V14l-6 6H5.5A1.5 1.5 0 0 1 4 18.5v-13A1.5 1.5 0 0 1 5.5 4z"/><path d="M14 20v-4.5a1.5 1.5 0 0 1 1.5-1.5H20"/></svg></span><span>Notes</span></button>
+  <button type="button" data-ptab="deadlines"><span class="pi"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="7.5"/><path d="M12 9.5V13l2.5 2M9.5 2.5h5"/></svg></span><span>Deadlines</span></button>
+  <button type="button" data-ptab="more"><span class="pi"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5.5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="18.5" cy="12" r="1.3"/></svg></span><span>More</span></button>
+</nav>
 <div class="scrim" id="setScrim"></div>
 <aside class="sheet set-sheet" id="setPanel" role="dialog" aria-modal="true" aria-label="Settings">
   <div class="sheet-head">
@@ -1705,6 +1810,14 @@ body.cal-view .app{ width:max-content; max-width:100%; }
      config.example.js to config.local.js to make one. Without it the app runs
      on the neutral examples in CONFIG below. -->
 <script src="config.local.js"></script>
+<script>/* Where the settings came from. The laptop has config.local.js; the phone (served from
+   GitHub, where that file never goes) uses the copy the cloud last sent it. */
+(function(){ try {
+  if (window.MONTHLY_PLAN_CONFIG){ window.MP_CONFIG_SRC = 'file'; window.MP_CONFIG_JSON = JSON.stringify(window.MONTHLY_PLAN_CONFIG); return; }
+  var c = localStorage.getItem('monthlyPlan.config');
+  if (c){ window.MONTHLY_PLAN_CONFIG = JSON.parse(c); window.MP_CONFIG_SRC = 'cloud'; }
+} catch (e) {} })();
+</script>
 <script>
 "use strict";
 
@@ -1737,6 +1850,8 @@ const ZONE_GOOD = 60, ZONE_MID = 20;
 /* Demo mode: ?demo=1 — sample data in a completely separate store.
    Your real log is never read or written while in demo. */
 const DEMO = new URLSearchParams(location.search).has('demo');
+/* Phone layout (see PHONE below): on, and which page is showing. */
+let PHONE = false, ptab = 'today';
 const STORE_KEY = DEMO ? 'monthlyPlan.demo.v1' : 'monthlyPlan.v1';
 const DEMO_DAYS = 24;
 
@@ -1862,7 +1977,9 @@ const dayNumber = d => dayDiff(d, startDate) + 1;
    double-clicked without the launcher, and it is the fallback if the file is
    ever unreachable. The file wins whenever both hold a log.
    ============================================================ */
-const SERVED = location.protocol === 'http:' || location.protocol === 'https:';
+/* Only the launcher's own server has /api/data. Served from GitHub (the phone) there is no
+   file to write: the cloud and the browser hold the log there. */
+const SERVED = location.protocol === 'http:' && /^(127\.0\.0\.1|localhost)$/.test(location.hostname);
 const FILE_API = '/api/data';
 
 let recoveredNotice = '';              // set by load() when it rescues an unreadable blob
@@ -1945,6 +2062,7 @@ function save(){
   catch { if (!SERVED) toast('Could not save — storage is full or blocked'); }
   queueDiskWrite();                      // the save that counts — data.json on disk
   queueCsvWrite();                       // mirror to the linked CSV file
+  cloudQueue();                          // and to the other devices
 }
 
 /* --- writing data.json ------------------------------------------------- */
@@ -1986,8 +2104,8 @@ function flushDiskNow(){
   try { navigator.sendBeacon(FILE_API, new Blob([JSON.stringify(DB)], { type:'application/json' })); }
   catch { /* on the way out there is nothing more to try */ }
 }
-window.addEventListener('pagehide', flushDiskNow);
-document.addEventListener('visibilitychange', ()=>{ if (document.visibilityState === 'hidden') flushDiskNow(); });
+window.addEventListener('pagehide', ()=>{ flushDiskNow(); cloudFlush(); });
+document.addEventListener('visibilitychange', ()=>{ if (document.visibilityState === 'hidden'){ flushDiskNow(); cloudFlush(); } });
 
 /* Heartbeat. The server shuts itself down when these stop, which is how it
    knows the app window has been closed. */
@@ -1996,6 +2114,190 @@ if (SERVED){
   ping();
   setInterval(ping, 20000);
 }
+/* ============================================================
+   CLOUD SYNC — one log on the laptop and the phone
+
+   Signed in with Google, every key of DB is its own document at
+   users/{uid}/db/{key} in Firestore, holding the value as JSON text. A change
+   on either device reaches the other in a second or two; offline, Firestore
+   keeps the writes on the device and sends them once it's back online.
+   Keys merge one by one: the latest change to a day wins, and a change to
+   another day never touches it. data.json stays on the laptop as a backup.
+
+   The Firebase calls are in the module script at the end of the page; this
+   part only keeps the books, and talks to that through CLOUD.api.
+   ============================================================ */
+const CLOUD = {
+  api: null,          // set by cloudAttach() once Firebase has loaded
+  user: null,         // { uid, email, name } while signed in
+  state: 'off',       // off | loading | out | synced | syncing | offline | error
+  ready: false,       // the cloud's copy has been merged in; from here on changes flow both ways
+  cloud: {},          // key -> JSON text, as the cloud last showed it
+  known: {},          // key -> JSON text the cloud holds, or will once our writes land
+  base: {},           // key -> JSON text at sign-in, to spot edits made while it was loading
+  timer: 0,
+  redraw: new Set(), waiting: false, warned: false,
+};
+const CLOUD_UID = STORE_KEY + '.cloudUid';      // this device has synced with this account before
+const dbJson = k => DB[k] === undefined ? undefined : JSON.stringify(DB[k]);
+const isBlankJson = j => j === undefined || j === JSON.stringify(blankDay());
+
+function cloudAttach(api){
+  CLOUD.api = api; CLOUD.state = 'loading'; cloudShow();
+  api.start({ onUser: cloudUser, onDocs: cloudDocs, onConfig: cloudConfig, onError: cloudError });
+}
+function cloudFailed(){ CLOUD.state = 'error'; cloudShow(); }
+
+function cloudUser(u){
+  clearTimeout(CLOUD.timer); CLOUD.timer = 0;
+  CLOUD.user = u; CLOUD.ready = false; CLOUD.cloud = {}; CLOUD.known = {}; CLOUD.base = {};
+  if (u) Object.keys(DB).forEach(k => { CLOUD.base[k] = dbJson(k); });
+  CLOUD.state = u ? 'loading' : 'out';
+  cloudShow();
+}
+
+/** A batch of changes from the cloud. The first full one is merged; after that each
+    change replaces that key here, unless this device changed it and hasn't sent it yet. */
+function cloudDocs(changes, meta){
+  if (!CLOUD.user) return;
+  changes.forEach(c => { if (c.j == null) delete CLOUD.cloud[c.k]; else CLOUD.cloud[c.k] = c.j; });
+  CLOUD.state = meta.fromCache ? 'offline' : meta.pending ? 'syncing' : 'synced';
+  if (!CLOUD.ready){
+    let seen = null; try { seen = localStorage.getItem(CLOUD_UID); } catch {}
+    const returning = seen === CLOUD.user.uid;
+    // first time on this device: an offline snapshot is only an empty cache — wait for the real one
+    if (meta.fromCache && !returning){ CLOUD.state = 'loading'; return cloudShow(); }
+    cloudMerge(returning);
+    return cloudShow();
+  }
+  const got = [];
+  changes.forEach(c => {
+    const k = c.k, j = c.j == null ? undefined : c.j;
+    if (j === CLOUD.known[k]) return;                 // our own write coming back
+    const mine = dbJson(k) !== CLOUD.known[k];        // changed here, not sent yet: ours is newer
+    CLOUD.known[k] = j;
+    if (mine) return;
+    if (j === undefined) delete DB[k]; else DB[k] = JSON.parse(j);
+    got.push(k);
+  });
+  if (got.length){ save(); cloudRedraw(got); }
+  cloudShow();
+}
+
+/** Sign-in on this device: bring the cloud's copy in. The cloud wins, except for a key
+    this device changed while the copy was loading. Keys only this device has are sent up —
+    on the very first sign-in that's the whole log. */
+function cloudMerge(returning){
+  const cloud = CLOUD.cloud, got = [];
+  const first = !Object.keys(cloud).length;
+  new Set([...Object.keys(DB), ...Object.keys(cloud)]).forEach(k => {
+    const local = dbJson(k), c = cloud[k];
+    CLOUD.known[k] = c;
+    if (c === undefined || local === c) return;
+    if (returning && local !== CLOUD.base[k] && !isBlankJson(local)) return;   // edited while loading
+    DB[k] = JSON.parse(c); got.push(k);
+  });
+  CLOUD.ready = true;
+  try { localStorage.setItem(CLOUD_UID, CLOUD.user.uid); } catch {}
+  save();                                            // the merge goes to disk, and what only we had goes up
+  if (got.length) cloudRedraw(got);
+  if (first && Object.keys(DB).length) toast('Your log is in the cloud now');
+}
+
+function cloudQueue(){
+  if (!CLOUD.ready) return;
+  clearTimeout(CLOUD.timer);
+  CLOUD.timer = setTimeout(cloudPush, 700);          // typing in a note sends once it pauses
+}
+function cloudFlush(){ if (CLOUD.timer) cloudPush(); }
+/** Send every key that differs from what the cloud has. */
+function cloudPush(){
+  clearTimeout(CLOUD.timer); CLOUD.timer = 0;
+  if (!CLOUD.ready) return;
+  const puts = [], dels = [];
+  new Set([...Object.keys(DB), ...Object.keys(CLOUD.known)]).forEach(k => {
+    const j = dbJson(k);
+    if (j === CLOUD.known[k]) return;
+    if (j === undefined) dels.push(k); else puts.push({ k, j });
+    CLOUD.known[k] = j;
+  });
+  if (puts.length || dels.length) CLOUD.api.write(puts, dels).catch(cloudError);
+}
+
+/** The tasks and points. The laptop's config.local.js is the original and is sent up
+    whenever it changes; the phone keeps the latest copy and restarts once to use it. */
+function cloudConfig(j){
+  if (window.MP_CONFIG_SRC === 'file'){
+    if (j !== window.MP_CONFIG_JSON) CLOUD.api.putConfig(window.MP_CONFIG_JSON).catch(cloudError);
+    return;
+  }
+  if (!j) return;
+  let had = null; try { had = localStorage.getItem('monthlyPlan.config'); } catch {}
+  if (j === had) return;
+  try { localStorage.setItem('monthlyPlan.config', j); } catch { return; }
+  cloudFlush();
+  location.reload();
+}
+
+function cloudError(err){
+  console.warn('[monthlyPlan] sync', err);
+  CLOUD.state = 'error'; cloudShow();
+  if (!CLOUD.warned){ CLOUD.warned = true; toast('Sync problem — your changes are still saved on this device'); }
+}
+
+/** Show what came in. Never under someone's fingers: while a text box has focus
+    the redraw waits until it hasn't. (Checked on a timer: a box that is removed or
+    loses focus with the window in the background sends no blur.) */
+const typingIn = a => a && (a.isContentEditable || a.tagName === 'TEXTAREA' ||
+  (a.tagName === 'INPUT' && !/^(checkbox|radio|button|range)$/.test(a.type)));
+function cloudRedraw(keys){
+  keys.forEach(k => CLOUD.redraw.add(k));
+  if (CLOUD.waiting) return;
+  const a = document.activeElement;
+  if (typingIn(a)){
+    CLOUD.waiting = true;
+    const t = setInterval(()=>{
+      if (document.activeElement === a && a.isConnected) return;
+      clearInterval(t); CLOUD.waiting = false; cloudRedraw([]);
+    }, 400);
+    return;
+  }
+  const ks = [...CLOUD.redraw]; CLOUD.redraw.clear();
+  if (!ks.length) return;
+  if (ks.includes('_prefs')) applyPrefs();
+  renderCalendar(); renderTitle(); renderRank(); renderDeadlines(); renderNotes();
+  if (currentView === 'analytics') renderAnalytics();
+  if (openDate && ks.includes(key(openDate))){ renderSheetBody(key(openDate)); updateScoreBar(key(openDate)); }
+  announceRankChange();
+}
+
+function cloudSignIn(){
+  if (!CLOUD.api) return;
+  CLOUD.api.signIn().catch(err => {
+    if (!/popup-closed|cancelled-popup/.test(err && err.code || '')) toast('Sign-in didn’t finish — ' + ((err && err.code) || 'try again'));
+  });
+}
+function cloudSignOut(){ cloudFlush(); if (CLOUD.api) CLOUD.api.signOut().catch(cloudError); }
+
+/* ---- the Sync card in Settings ---- */
+function cloudBoxHTML(){
+  const s = CLOUD.state, u = CLOUD.user, head = '<h3>Sync</h3>';
+  if (!CLOUD.api) return head + (s === 'error'
+    ? `<div class="cap">Couldn’t reach sync — check the internet connection and reopen the app. Everything is still saved on this device.</div>`
+    : DEMO ? `<div class="cap">Off in the demo — sample data never goes to your cloud.</div>`
+    : `<div class="cap">Connecting…</div>`);
+  if (!u) return head + `<div class="cap">Sign in with Google once on each device. The laptop and the phone then share one log, and they stay signed in.</div>
+      <div class="data-row"><button class="solid" id="cloudIn">Sign in with Google</button></div>`;
+  const line = { loading:'Getting your log…', synced:'Synced — changes reach your other devices in a second or two',
+                 syncing:'Sending changes…', offline:'Offline — saved on this device, sent when you’re back online',
+                 error:'Sync problem — your changes are still saved on this device' }[s] || '';
+  return head + `<div class="cap">One log on every device you sign in on.${DEMO ? ' (Demo: sample data, kept apart from your real log.)' : ''}</div>
+    <div class="csv-state ${s === 'synced' ? 'linked' : ''}"><span class="led" ${s === 'error' ? 'style="background:var(--bad)"' : ''}></span>
+      <span class="who"><b>${escHtml(u.email || u.name || 'Signed in')}</b><em>${line}</em></span></div>
+    <div class="data-row"><button class="ghost" id="cloudOut">Sign out</button></div>`;
+}
+function cloudShow(){ const b = document.getElementById('cloudBox'); if (b) b.innerHTML = cloudBoxHTML(); }
+
 const blankDay = () => ({ checks:{}, water:0, sleep:null, money:0, big:[], gym:false });
 
 function entry(k){
@@ -2484,7 +2786,7 @@ const MIN_CELL = 26;
 function fitCalendar(){
   const root = document.documentElement;
   root.style.removeProperty('--cell');            // back to the CSS formula
-  if (currentView !== 'calendar') return;
+  if (currentView !== 'calendar' || PHONE) return; // a phone scrolls; the formula sizes it for the width
   const probe = document.querySelector('#view-calendar .day');
   if (!probe) return;
   // fit as if the month had six week rows, so a five-row month gets the same cell;
@@ -3152,6 +3454,7 @@ document.getElementById('btnJournal').addEventListener('click', ()=> openJournal
 document.getElementById('btnDayJournal').addEventListener('click', ()=>{
   if (!openDate) return;
   const d = openDate;
+  if (sheet.classList.contains('as-page')) return openJournal(d);   // the Today page stays where it is
   closeSheet('swap');
   openJournal(d);
 });
@@ -3985,6 +4288,7 @@ function fitRailLists(){
   ['dlRailList', 'mmList'].forEach(id=>{
     const el = document.getElementById(id);
     el.style.maxHeight = '';
+    if (PHONE) return;                            // a page of its own there: the list just scrolls
     const room = el.parentElement.clientHeight - el.offsetTop + el.parentElement.offsetTop;   // space below the half's header
     const tiles = [...el.children].filter(c => c.matches('.dl-card, .mm-card'));
     if (!room || !tiles.length) return;
@@ -4590,7 +4894,7 @@ function mmMove(id, targetId, where){
 /* ---- pointer: select, edit, tick, fold, drag a box ---- */
 const mmWorld = (cx, cy) => { const r = mmStage.getBoundingClientRect(); return { x: (cx - r.left - MM.view.tx) / MM.view.z, y: (cy - r.top - MM.view.ty) / MM.view.z }; };
 mmNodes.addEventListener('pointerdown', e=>{
-  if (e.button !== 0) return;
+  if (e.button !== 0 || PHONE) return;                      // a phone only looks: the press pans the stage
   const el = e.target.closest('.mm-node'); if (!el || el.classList.contains('mm-ghost')) return;
   e.stopPropagation();                                      // not a pan
   if (e.target.closest('[data-act]')){ e.preventDefault(); return; }   // tick and knob work on click, never select
@@ -4618,11 +4922,12 @@ mmNodes.addEventListener('pointerup', e=>{
 });
 mmNodes.addEventListener('pointercancel', ()=>{ MM.press = null; if (MM.drag){ MM.drag.target = null; mmDragEnd(); } });
 mmNodes.addEventListener('dblclick', e=>{
+  if (PHONE) return;
   const el = e.target.closest('.mm-node'); if (!el || e.target.closest('[data-act]') || el.classList.contains('mm-ghost')) return;
   mmStartEdit(el.dataset.id, 'end');
 });
 mmNodes.addEventListener('click', e=>{
-  const b = e.target.closest('[data-act]'); if (!b) return;
+  const b = e.target.closest('[data-act]'); if (!b || PHONE) return;
   const id = b.closest('.mm-node').dataset.id;
   if (b.dataset.act === 'tick') mmToggleTick(id);
   else if (b.dataset.act === 'fold') mmToggleFold(id);
@@ -4693,12 +4998,39 @@ function mmFit(animate){
   MM.list.forEach(v => { const r = MM.L[v.id]; if (!r) return;
     x0 = Math.min(x0, r.x - 22); x1 = Math.max(x1, r.x + r.w + 22); y0 = Math.min(y0, r.y); y1 = Math.max(y1, r.y + r.h); });
   if (!isFinite(x0)) return;
-  const W = mmStage.clientWidth, H = mmStage.clientHeight, pad = 64;
-  const z = Math.max(.35, Math.min(1.5, (W - pad * 2) / (x1 - x0), (H - pad * 2 - 24) / (y1 - y0)));
+  const W = mmStage.clientWidth, H = mmStage.clientHeight, pad = PHONE ? 16 : 64;
+  // a phone is too narrow to fit a wide map and still read it: start readable, pan for the rest
+  const z = Math.max(PHONE ? .75 : .35, Math.min(1.5, (W - pad * 2) / (x1 - x0), (H - pad * 2 - 24) / (y1 - y0)));
   mmViewTo(z, W / 2 - z * (x0 + x1) / 2, (H - 24) / 2 - z * (y0 + y1) / 2, animate);
 }
+/* two fingers: pinch to zoom about the point between them */
+const mmTouch = new Map();
 mmStage.addEventListener('pointerdown', e=>{
-  if (e.button !== 0 || e.target.closest('.mm-node, .mm-tools')) return;
+  if (e.pointerType !== 'touch') return;
+  mmTouch.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (mmTouch.size !== 2) return;
+  e.stopImmediatePropagation();
+  const [a, b] = [...mmTouch.values()], r = mmStage.getBoundingClientRect();
+  const cx = (a.x + b.x) / 2 - r.left, cy = (a.y + b.y) / 2 - r.top;
+  MM.pan = null; mmStage.classList.remove('panning'); mmStopView();
+  MM.pinch = { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, z: MM.view.z, wx: (cx - MM.view.tx) / MM.view.z, wy: (cy - MM.view.ty) / MM.view.z };
+}, true);
+mmStage.addEventListener('pointermove', e=>{
+  if (!mmTouch.has(e.pointerId)) return;
+  mmTouch.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  const p = MM.pinch; if (!p || mmTouch.size < 2) return;
+  e.stopImmediatePropagation();
+  const [a, b] = [...mmTouch.values()], r = mmStage.getBoundingClientRect();
+  const cx = (a.x + b.x) / 2 - r.left, cy = (a.y + b.y) / 2 - r.top;
+  MM.view.z = Math.max(.35, Math.min(2.2, p.z * Math.hypot(a.x - b.x, a.y - b.y) / p.d));
+  MM.view.tx = cx - p.wx * MM.view.z; MM.view.ty = cy - p.wy * MM.view.z; mmApplyView();
+}, true);
+['pointerup', 'pointercancel'].forEach(t => mmStage.addEventListener(t, e=>{
+  mmTouch.delete(e.pointerId);
+  if (mmTouch.size < 2) MM.pinch = null;
+}, true));
+mmStage.addEventListener('pointerdown', e=>{
+  if (e.button !== 0 || (!PHONE && e.target.closest('.mm-node, .mm-tools'))) return;
   mmStopView();
   MM.pan = { x: e.clientX, y: e.clientY, tx: MM.view.tx, ty: MM.view.ty, moved: false, pts: [{ t: performance.now(), x: e.clientX, y: e.clientY }] };
   mmStage.setPointerCapture(e.pointerId);
@@ -4904,6 +5236,7 @@ function applyTheme(animate, from){
   const dark = pick === 'dark' || (pick === 'system' && themeMQ.matches);
   const flip = () => {
     if (dark) root.dataset.theme = 'dark'; else delete root.dataset.theme;
+    document.querySelector('meta[name="theme-color"]').content = dark ? '#28231D' : '#FBF7F0';   // the phone's status bar
     const b = document.getElementById('themeBtn');
     if (b){ b.title = dark ? 'Light mode' : 'Dark mode'; b.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode'); }
   };
@@ -4940,6 +5273,7 @@ function renderMe(){
   const nm = document.getElementById('meName');
   nm.textContent = name || 'Set your name'; nm.classList.toggle('unset', !name);
   document.getElementById('meSub').textContent = DEMO ? '· Demo' : `· Day ${Math.max(1, dayNumber(today()))}`;
+  if (PHONE && ptab === 'more') renderPMore();
 }
 /** Put the hide / show choices on the page, then let the layout settle around them. */
 function applyPrefs(){
@@ -4958,9 +5292,10 @@ function renderSettings(){
   const p = prefs(), h = p.hide || {};
   const theme = p.theme || 'light';
   document.getElementById('setBody').innerHTML = `
+    <div class="panel" id="cloudBox">${cloudBoxHTML()}</div>
     <div class="panel">
       <h3>Appearance</h3>
-      <div class="cap">Light is the original look. Match system follows Windows' own setting.</div>
+      <div class="cap">Light is the original look. Match system follows ${PHONE ? 'the phone’s' : 'Windows’'} own setting.</div>
       <div class="dl-seg" role="radiogroup" aria-label="Theme" style="margin:4px 0 0">${[['light','Light'],['dark','Dark'],['system','Match system']].map(([v, t]) =>
         `<button type="button" role="radio" aria-checked="${theme === v}" class="${theme === v ? 'on' : ''}" data-theme-pick="${v}">${t}</button>`).join('')}</div>
     </div>
@@ -4970,7 +5305,7 @@ function renderSettings(){
       <div class="set-profile"><span class="me-av big" id="setAv"></span>
         <input class="set-in" id="setName" maxlength="40" placeholder="Your name" autocomplete="off" value="${escHtml(p.name || '')}"></div>
     </div>
-    <div class="panel">
+    <div class="panel set-show">
       <h3>Show on screen</h3>
       <div class="cap">Hiding a part keeps everything in it — turn it back on and it's all there. The middle of the page stays where it is.</div>
       ${SHOW.map(x => { const off = x.needs && h[x.needs];
@@ -4984,6 +5319,8 @@ function renderSettings(){
 }
 document.getElementById('setBody').addEventListener('click', e=>{
   const b = e.target.closest('[data-theme-pick]'); if (b) setTheme(b.dataset.themePick, centreOf(b));
+  if (e.target.closest('#cloudIn')) cloudSignIn();
+  if (e.target.closest('#cloudOut')) cloudSignOut();
 });
 document.getElementById('setBody').addEventListener('input', e=>{
   if (e.target.id !== 'setName') return;
@@ -5042,7 +5379,9 @@ function openSheet(d){
   renderSheetBody(k);
   updateScoreBar(k);
 
-  scrim.classList.add('on'); sheet.classList.add('on');
+  sheet.classList.add('on');
+  if (sheet.classList.contains('as-page')) return;    // the phone's Today page — nothing behind it to cover
+  scrim.classList.add('on');
   document.body.style.overflow = 'hidden';
 }
 /** how === 'swap': the journal is taking over, so hand it the scrim and recede
@@ -5062,7 +5401,7 @@ function closeSheet(how){
 }
 scrim.addEventListener('click', closeSheet);
 document.getElementById('btnClose').addEventListener('click', closeSheet);
-document.addEventListener('keydown', e=>{ if (e.key === 'Escape' && sheet.classList.contains('on')) closeSheet(); });
+document.addEventListener('keydown', e=>{ if (e.key === 'Escape' && sheet.classList.contains('on') && !sheet.classList.contains('as-page')) closeSheet(); });
 
 document.getElementById('btnReset').addEventListener('click', ()=>{
   if (!openDate) return;
@@ -6274,7 +6613,8 @@ function dataPanel(){
   </div>`;
 
   /* Where the log actually lives. The CSV below is only a spare copy now. */
-  const disk = diskState === 'ok'
+  const disk = !SERVED && location.protocol !== 'file:' ? ''
+    : diskState === 'ok'
       ? `<div class="csv-state linked">
            <span class="led"></span>
            <span class="who"><b>Saving to data.json</b><em>In the app's data folder, rewritten after every change. Open the app and it is already here.</em></span>
@@ -6315,6 +6655,7 @@ function dataPanel(){
          <button class="ghost" id="csvDownload">Save CSV now</button>
          <button class="ghost" id="csvImport">Import CSV</button>`;
 
+  if (!disk) return '';                         // the phone: the cloud and this browser are the log
   return `<div class="panel">
     <h3>Where your log lives</h3>
     <div class="cap">Every change is written to <b>data/data.json</b> in the app folder, the moment you make it.
@@ -6380,6 +6721,86 @@ document.getElementById('brandSub').textContent = DEMO
   ? `Sample data · ${DEMO_DAYS} days of history`
   : `Day ${Math.max(1, dayNumber(today()))}`;
 
+/* ============================================================
+   PHONE — the same app, one page at a time
+
+   Under 640px wide the side columns become pages of their own, picked from
+   the bar at the bottom: Today (the day sheet, always on today), Calendar,
+   Notes, Deadlines (mind maps under them, to look at only) and More.
+   Nothing is duplicated: each page is the desktop's own piece, laid out for
+   a hand, so a change to one shows on the other.
+   ============================================================ */
+const phoneMQ = matchMedia('(max-width: 640px)');
+const pTabs = document.getElementById('pTabs'), pMore = document.getElementById('pMore');
+
+function phoneTab(t){
+  const root = document.documentElement, was = root.dataset.ptab;
+  ptab = t; root.dataset.ptab = t;
+  pTabs.querySelectorAll('[data-ptab]').forEach(b =>
+    b.setAttribute('aria-selected', String(b.dataset.ptab === (t === 'analytics' ? 'more' : t))));
+  if (t === 'today'){ sheet.classList.add('as-page'); openSheet(today()); }
+  else if (sheet.classList.contains('as-page')) phoneUnpage();
+  if (t === 'calendar' || t === 'analytics') setView(t);
+  if (t === 'deadlines') renderDeadlines();
+  if (t === 'more') renderPMore();
+  if (was !== t){
+    window.scrollTo(0, 0);
+    const pg = { today: sheet, calendar: document.querySelector('.app'), analytics: document.querySelector('.app'),
+                 notes: document.getElementById('snRail'), deadlines: document.getElementById('dlRail'), more: pMore }[t];
+    pg.classList.remove('page-in'); void pg.offsetWidth; pg.classList.add('page-in');
+  }
+}
+/** Take the Today page down at once — sliding it away would cross the next page. */
+function phoneUnpage(){
+  sheet.style.transition = 'none';
+  sheet.classList.remove('as-page', 'page-in');
+  closeSheet();
+  void sheet.offsetWidth; sheet.style.transition = '';
+}
+function phoneApply(){
+  const was = PHONE;
+  PHONE = phoneMQ.matches;
+  document.documentElement.classList.toggle('phone', PHONE);
+  if (PHONE) phoneTab(ptab);
+  else if (was){
+    delete document.documentElement.dataset.ptab;
+    if (sheet.classList.contains('as-page')) phoneUnpage();
+    setView('calendar');
+  }
+  if (PHONE !== was) settleLayout();
+}
+phoneMQ.addEventListener('change', phoneApply);
+pTabs.addEventListener('click', e=>{ const b = e.target.closest('[data-ptab]'); if (b) phoneTab(b.dataset.ptab); });
+
+/* ---- More: the drawers, and the odd setting ---- */
+function renderPMore(){
+  const name = (prefs().name || '').trim(), av = initials(name);
+  const dark = document.documentElement.dataset.theme === 'dark';
+  const chev = '<svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>';
+  const row = (act, ic, t, sub) => `<button class="pm-row" type="button" data-pm="${act}"><span class="ic">${ic}</span>
+      <span class="t"><b>${t}</b><span>${sub}</span></span>${chev}</button>`;
+  pMore.innerHTML = `
+    <button class="pm-me" type="button" data-pm="settings"><span class="me-av big">${av ? escHtml(av) : PERSON}</span>
+      <span class="t"><b>${escHtml(name || 'Set your name')}</b><span>${DEMO ? 'Demo' : `Day ${Math.max(1, dayNumber(today()))}`}</span></span></button>
+    <div class="pm-list">
+      ${row('bank', '🏦', 'Money', 'Income, statement and fixed deposits')}
+      ${row('journal', '📖', 'Journal', 'A few lines about each day')}
+      ${row('analytics', '📊', 'Analytics', 'Scores, streaks and charts')}
+      ${row('rank', '⚔️', 'Rank & level', 'Where you stand, and what moves it')}
+    </div>
+    <div class="pm-list">
+      <label class="pm-row"><span class="ic">🌙</span><span class="t"><b>Dark mode</b><span>Easier on the eyes at night</span></span>
+        <input class="sw" type="checkbox" role="switch" id="pmDark" ${dark ? 'checked' : ''}></label>
+      ${row('settings', '⚙️', 'Settings', 'Sync, profile and appearance')}
+    </div>`;
+}
+pMore.addEventListener('click', e=>{
+  const b = e.target.closest('[data-pm]'); if (!b) return;
+  ({ bank: ()=> openBank(), journal: ()=> openJournal(), analytics: ()=> phoneTab('analytics'),
+     rank: ()=> openInfo('rank'), settings: openSettings })[b.dataset.pm]();
+});
+pMore.addEventListener('change', e=>{ if (e.target.id === 'pmDark') setTheme(e.target.checked ? 'dark' : 'light', centreOf(e.target)); });
+
 /* Rebuild the chip row only when the number that fits actually changes — redrawing
    it on every resize tick would restart their entrance animation mid-drag. */
 window.addEventListener('resize', ()=>{
@@ -6403,7 +6824,10 @@ if (!DEMO && !window.MONTHLY_PLAN_CONFIG){
   if (stray) setTimeout(()=> toast('config.local.js didn’t load — showing the example tasks. Your log is untouched.'), 900);
 }
 if (DEMO) setView('analytics');
+phoneApply();
 announceRankChange();
+/* the offline copy for the phone (GitHub Pages is https; the laptop's local server isn't cached) */
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(()=>{});
 
 /* Roll over to the new day if the app is left open past midnight. */
 let rolloverKey = key(today());
@@ -6413,11 +6837,75 @@ setInterval(()=>{
     rolloverKey = k;
     renderCalendar();
     renderDeadlines();                   // "in 2 days" becomes "tomorrow"
+    if (PHONE && ptab === 'today') openSheet(today());
     if (currentView === 'analytics') renderAnalytics();
     queueCsvWrite();                     // yesterday's score is now final
     announceRankChange();                // and it may have moved the rank
   }
 }, 60000);
+</script>
+
+<script type="module">
+/* ============================================================
+   FIREBASE — the cloud half of CLOUD SYNC.
+   The config below isn't a secret: it only names the project. What keeps the
+   log private is the Google sign-in plus the Firestore rule that lets each
+   account read and write users/{its own uid}/ and nothing else.
+   The demo stays off the cloud; ?demo=1&cloud=1 syncs the sample data to its own
+   place (users/{uid}/demo), apart from the real log, to try sync out safely.
+   ============================================================ */
+const FIREBASE_SDK = 'https://www.gstatic.com/firebasejs/12.19.0/';
+const FIREBASE_CONFIG = {
+  apiKey: 'AIzaSyCxwW7b3mRurT3wqjOZx5vjn6x8KXtjvRs',
+  authDomain: 'monthly-plan-b7b30.firebaseapp.com',
+  projectId: 'monthly-plan-b7b30',
+  storageBucket: 'monthly-plan-b7b30.firebasestorage.app',
+  messagingSenderId: '272220513548',
+  appId: '1:272220513548:web:fb4312a249c01ee8c1d529',
+};
+const TRY_DEMO = DEMO && new URLSearchParams(location.search).has('cloud');
+const PLACE = DEMO ? { docs: 'demo', config: 'demo-config' } : { docs: 'db', config: 'config' };
+
+async function firebaseCloud(){
+  const [{ initializeApp }, A, F] = await Promise.all(
+    ['firebase-app.js', 'firebase-auth.js', 'firebase-firestore.js'].map(f => import(FIREBASE_SDK + f)));
+  const app = initializeApp(FIREBASE_CONFIG);
+  const auth = A.getAuth(app);
+  // kept on the device too: opens instantly, works offline, and sends queued writes later
+  const db = F.initializeFirestore(app, { localCache: F.persistentLocalCache({ tabManager: F.persistentMultipleTabManager() }) });
+  let uid = null, stop = [];
+  return {
+    start(h){
+      A.onAuthStateChanged(auth, user => {
+        stop.forEach(f => f()); stop = [];
+        uid = user ? user.uid : null;
+        h.onUser(user ? { uid: user.uid, email: user.email, name: user.displayName } : null);
+        if (!user) return;
+        stop.push(F.onSnapshot(F.collection(db, 'users', uid, PLACE.docs), { includeMetadataChanges: true }, snap => {
+          h.onDocs(snap.docChanges().map(c => ({ k: c.doc.id, j: c.type === 'removed' ? null : c.doc.data().j })),
+                   { fromCache: snap.metadata.fromCache, pending: snap.metadata.hasPendingWrites });
+        }, h.onError));
+        stop.push(F.onSnapshot(F.doc(db, 'users', uid, 'meta', PLACE.config),
+          snap => h.onConfig(snap.exists() ? snap.data().j : null), h.onError));
+      });
+    },
+    signIn: () => A.signInWithPopup(auth, new A.GoogleAuthProvider()),
+    signOut: () => A.signOut(auth),
+    async write(puts, dels){
+      const ops = [...puts.map(p => b => b.set(F.doc(db, 'users', uid, PLACE.docs, p.k), { j: p.j, t: F.serverTimestamp() })),
+                   ...dels.map(k => b => b.delete(F.doc(db, 'users', uid, PLACE.docs, k)))];
+      const runs = [];
+      for (let i = 0; i < ops.length; i += 400){              // a batch holds 500 writes at most
+        const b = F.writeBatch(db); ops.slice(i, i + 400).forEach(op => op(b)); runs.push(b.commit());
+      }
+      await Promise.all(runs);
+    },
+    putConfig: j => F.setDoc(F.doc(db, 'users', uid, 'meta', PLACE.config), { j, t: F.serverTimestamp() }),
+  };
+}
+
+if (window.MP_CLOUD_TEST) cloudAttach(window.MP_CLOUD_TEST);          // a test's stand-in for Firebase
+else if (!DEMO || TRY_DEMO) firebaseCloud().then(cloudAttach, err => { console.warn('[monthlyPlan] sync unavailable', err); cloudFailed(); });
 </script>
 </body>
 </html>

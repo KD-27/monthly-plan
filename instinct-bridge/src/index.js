@@ -21,12 +21,13 @@
    USER_UID, COLLECTION ('db' for the real log, 'demo' for the demo's),
    TZ_OFFSET_MINUTES (330 = Sri Lanka), READ_ONLY ('1' = only GET is answered).
    ============================================================ */
+import { runInbox } from './notion-inbox.js';
 
 /* ---- the app's fixed rules (index.html → CONFIG / SCORING) ---- */
 const WATER_TARGET_ML = 3000;
 const SLEEP_LO = 6, SLEEP_HI = 8, SLEEP_FALLOFF = 1.5;
 const ZONE_GOOD = 60, ZONE_MID = 20;
-const JOURNAL_MAX_CHARS = 700, JOURNAL_MAX_LINES = 14;     // one notepad page
+const JOURNAL_MAX_CHARS = 700;                              // one notepad page (index.html JR_MAX_CHARS)
 const NOTE_COLORS = ['sand', 'butter', 'sage', 'rose', 'mist'];
 
 const CORS = {
@@ -44,27 +45,37 @@ class Bad extends Error {
 class Conflict extends Error {}
 
 export default {
-  async fetch(request, env){
-    if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
-    const url = new URL(request.url);
-    try {
-      if (url.pathname === '/' || url.pathname === '/api') return json({ ok: true, app: 'Monthly Plan bridge', start: 'GET /api/help' });
-      await authorize(request, env);
-      if (env.READ_ONLY === '1' && request.method !== 'GET')
-        throw new Bad('This bridge is read-only for now — nothing was changed. Log it in the app.', 403);
-      const handler = ROUTES[`${request.method} ${url.pathname.replace(/\/+$/, '')}`];
-      if (!handler) throw new Bad(`No such endpoint: ${request.method} ${url.pathname}. GET /api/help lists them.`, 404);
-      const ctx = await makeContext(request, env, url);
-      // say on every answer which log this is, so nothing stale in the chat can say otherwise
-      const source = ctx.fs.place.docs === 'demo' ? 'demo sample data (for testing)' : 'real log, live';
-      return json({ ok: true, source, ...(env.READ_ONLY === '1' ? { access: 'read-only' } : {}), ...(await handler(ctx)) });
-    } catch (err){
-      if (err instanceof Bad) return json({ ok: false, error: err.message, ...(err.extra || {}) }, err.status);
-      console.error(err);
-      return json({ ok: false, error: 'The bridge hit a problem: ' + (err && err.message || err) }, 500);
-    }
-  },
+  fetch: (request, env) => handle(request, env),
+  /* every minute (wrangler.toml [triggers]): apply what Instinct left in the Notion inbox */
+  async scheduled(event, env, ctx){ ctx.waitUntil(runInbox(env, handle)); },
 };
+
+/** One request. `internal` is the Notion inbox calling its own actions: no key, and the
+    read-only switch doesn't apply (it only guards the outside door). */
+async function handle(request, env, { internal = false } = {}){
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
+  const url = new URL(request.url);
+  const path = url.pathname.replace(/\/+$/, '');
+  try {
+    if (path === '' || path === '/api') return json({ ok: true, app: 'Monthly Plan bridge', start: 'GET /api/help' });
+    if (!internal){
+      await authorize(request, env);
+      if (path === '/api/inbox/run') return json({ ok: true, inbox: await runInbox(env, handle) });   // run the inbox now, not at the next minute
+      if (env.READ_ONLY === '1' && request.method !== 'GET' && path !== '/api/write-test')
+        throw new Bad('This bridge is read-only for now — nothing was changed. Log it in the app.', 403);
+    }
+    const handler = ROUTES[`${request.method} ${path}`];
+    if (!handler) throw new Bad(`No such endpoint: ${request.method} ${url.pathname}. GET /api/help lists them.`, 404);
+    const ctx = await makeContext(request, env, url);
+    // say on every answer which log this is, so nothing stale in the chat can say otherwise
+    const source = ctx.fs.place.docs === 'demo' ? 'demo sample data (for testing)' : 'real log, live';
+    return json({ ok: true, source, ...(env.READ_ONLY === '1' && !internal ? { access: 'read-only' } : {}), ...(await handler(ctx)) });
+  } catch (err){
+    if (err instanceof Bad) return json({ ok: false, error: err.message, ...(err.extra || {}) }, err.status);
+    console.error(err);
+    return json({ ok: false, error: 'The bridge hit a problem: ' + (err && err.message || err) }, 500);
+  }
+}
 
 /* ============================================================
    AUTH — the bearer token, compared in constant time
@@ -335,6 +346,8 @@ function dayView(ctx, k, e){
 const ROUTES = {
   'GET /api/health': async ctx => ({ app: 'Monthly Plan', collection: ctx.fs.place.docs, today: ctx.today, tasks: tasksOf(ctx).length }),
   'GET /api/help': async () => ({ endpoints: HELP }),
+  /* proves a POST gets through from the caller — answers even when read-only, and changes nothing */
+  'POST /api/write-test': async ctx => ({ received: 'POST', body: ctx.body, changed: 'nothing — this address only confirms that a POST arrived' }),
 
   /* ---- reading ---- */
   'GET /api/summary': async ctx => {
@@ -400,8 +413,8 @@ const ROUTES = {
       if (b.journal != null || b.journal_append != null){
         const add = String(b.journal_append ?? '').trim();
         let text = b.journal != null ? String(b.journal).trim() : [e.note || '', add].filter(Boolean).join(e.note && !/\s$/.test(e.note) ? ' ' : '');
-        if (text.length > JOURNAL_MAX_CHARS || text.split('\n').length > JOURNAL_MAX_LINES)
-          throw new Bad(`That doesn't fit on the day's journal page (about ${JOURNAL_MAX_CHARS} characters, ${JOURNAL_MAX_LINES} lines). It has ${(e.note || '').length} already — keep it shorter.`);
+        if (text.length > JOURNAL_MAX_CHARS)
+          throw new Bad(`That doesn't fit on the day's journal page (${JOURNAL_MAX_CHARS} characters). It has ${(e.note || '').length} already — keep it shorter.`);
         if (text) e.note = text; else delete e.note;
         said.push('journal saved');
       }

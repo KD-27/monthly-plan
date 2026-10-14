@@ -420,13 +420,14 @@ body.cal-view .app{ width:max-content; max-width:100%; }
 .pg-date small{ font-size:12px; font-weight:500; color:var(--ink-3); margin-left:4px; }
 .pg-day{ margin-left:auto; font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--good); }
 
-.pg-lines{ position:relative; height:calc(var(--lines) * var(--lh)); }
+.pg-lines{ position:relative; height:calc(var(--lines) * var(--lh)); overflow:hidden; }
 .pg-nums{ position:absolute; top:0; margin:0; padding:0; list-style:none; }
 .pg-nums{ left:0; width:22px; }
 .pg-nums li{ height:var(--lh); display:flex; align-items:flex-end; padding-bottom:6px; font-size:9.5px; font-weight:650;
   letter-spacing:.08em; color:var(--ink-3); font-variant-numeric:tabular-nums; }
-.pg-text{ position:absolute; top:0; left:28px; right:0; height:100%; margin:0; padding:0 2px; border:0; resize:none; overflow:hidden;
-  background:repeating-linear-gradient(180deg, transparent 0 calc(var(--lh) - 1px), #DDD3C2 calc(var(--lh) - 1px) var(--lh));
+.pg-text{ position:absolute; top:0; left:28px; right:0; height:100%; margin:0; padding:0 2px; border:0; resize:none;
+  overflow-x:hidden; overflow-y:auto; scrollbar-width:none; overscroll-behavior:contain;   /* a long entry scrolls, ruled lines and all */
+  background:repeating-linear-gradient(180deg, transparent 0 calc(var(--lh) - 1px), #DDD3C2 calc(var(--lh) - 1px) var(--lh)) local;
   font:inherit; font-size:14.5px; line-height:var(--lh); color:var(--ink); }
 .pg-text:focus{ outline:none; }
 .pg-text::placeholder{ color:#C9BCA6; }
@@ -1318,7 +1319,7 @@ body.cal-view .app{ width:max-content; max-width:100%; }
 :root[data-theme="dark"] .face.back{ background:repeating-linear-gradient(180deg, transparent 0 27px, rgba(90,78,64,.4) 27px 28px) #25201A; }
 :root[data-theme="dark"] .coil i{ border-color:#A79A88; border-bottom-color:transparent; }
 :root[data-theme="dark"] .holes i{ box-shadow:inset 0 1px 2px rgba(0,0,0,.6); }
-:root[data-theme="dark"] .pg-text{ background:repeating-linear-gradient(180deg, transparent 0 calc(var(--lh) - 1px), #463D32 calc(var(--lh) - 1px) var(--lh)); }
+:root[data-theme="dark"] .pg-text{ background:repeating-linear-gradient(180deg, transparent 0 calc(var(--lh) - 1px), #463D32 calc(var(--lh) - 1px) var(--lh)) local; }
 :root[data-theme="dark"] .pg-text::placeholder{ color:#6C6152; }
 
 /* deadlines rail: amber night */
@@ -3221,7 +3222,9 @@ document.getElementById('btnBank').addEventListener('click', ()=> openBank());
 const jrPanel = document.getElementById('jrPanel');
 const jrScrim = document.getElementById('jrScrim');
 const jrStack = document.getElementById('jrStack');
-const JR_LINES = 14;
+const JR_LINES = 14;                     // ruled lines on the page
+const JR_MAX_CHARS = 700;                // the same on every screen (and the bridge); a narrow one scrolls
+const JR_NUMS = 40;                      // line numbers drawn, so they keep up when a page scrolls
 const JR_RIFFLE_MAX = 7;                 // pages shown flying past on a long jump
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const dateOfKey = k => { const [y,m,d] = k.split('-').map(Number); return new Date(y, m-1, d); };
@@ -3255,7 +3258,7 @@ function jrPage(d){
   const pg = document.createElement('div');
   pg.className = 'page';
   pg.dataset.k = k;
-  const nums = Array.from({ length:JR_LINES }, (_,i) => `<li>${String(i+1).padStart(2,'0')}</li>`).join('');
+  const nums = Array.from({ length:JR_NUMS }, (_,i) => `<li>${String(i+1).padStart(2,'0')}</li>`).join('');
   pg.innerHTML = `
     <div class="holes">${'<i></i>'.repeat(12)}</div>
     <div class="pg-top">
@@ -3284,7 +3287,7 @@ function jrPage(d){
 jrStack.addEventListener('input', ev=>{
   const ta = ev.target.closest('.pg-text'); if (!ta) return;
   const pg = ta.closest('.page');
-  if (ta.scrollHeight > ta.clientHeight + 1){          // the page is full — keep what fitted
+  if (ta.value.length > JR_MAX_CHARS){                // the page is full — keep what fitted
     const at = Math.max(0, ta.selectionStart - (ta.value.length - ta.dataset.last.length));
     ta.value = ta.dataset.last;
     ta.setSelectionRange(at, at);
@@ -3296,6 +3299,11 @@ jrStack.addEventListener('input', ev=>{
   if (ta.value.trim()) e.note = ta.value; else delete e.note;
   save();
 });
+// the line numbers ride along when a long entry scrolls
+jrStack.addEventListener('scroll', ev=>{
+  const ta = ev.target.closest && ev.target.closest('.pg-text'); if (!ta) return;
+  const nums = ta.parentElement.querySelector('.pg-nums'); if (nums) nums.style.transform = `translateY(${-ta.scrollTop}px)`;
+}, true);
 jrStack.addEventListener('focusout', ev=>{
   const ta = ev.target.closest('.pg-text'); if (!ta) return;
   const e = peek(ta.closest('.page').dataset.k);

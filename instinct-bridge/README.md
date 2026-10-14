@@ -22,6 +22,16 @@ the log, and every change is refused at the bridge. Instinct's own tool can only
 from this account (a request for write access is with its team). To allow changes later, set
 `READ_ONLY = "0"` and deploy. The write endpoints below are built and tested, ready for that.
 
+**Meanwhile, writes go through a Notion inbox (temporary).** Instinct can write to Notion, so it
+adds one row per change to the "Monthly Plan inbox" database (Request · Action · Body JSON ·
+Status · Result). A cron trigger runs every minute: it claims each new row (Status → Working, so
+nothing is applied twice), runs it through the same actions as the API — same rules, change log,
+undo — and writes Done or Failed with the reason for Instinct to read back. Secrets
+`NOTION_TOKEN` and `NOTION_DATABASE_ID`; code in `src/notion-inbox.js`. To remove it: delete that
+file, its import and `scheduled` in `index.js`, the `[triggers]` block in `wrangler.toml`, and the
+two secrets. `POST /api/inbox/run` (with the key) runs it at once; `POST /api/write-test` answers
+even while read-only and changes nothing — it shows whether a caller can send POST at all.
+
 ## Safety
 
 - Only someone with the key gets in; the Firebase key never leaves Cloudflare.

@@ -4,6 +4,8 @@
 #   FIREBASE_CLIENT_EMAIL  the service account's email
 #   FIREBASE_PRIVATE_KEY   the service account's private key (PEM)
 #   USER_UID               your Firebase account id (Settings → Instinct AI → Account)
+#   NOTION_TOKEN           (temporary) the Notion integration's secret, for the inbox
+#   NOTION_DATABASE_ID     (temporary) the "Monthly Plan inbox" database
 name = "monthly-plan-bridge"
 main = "src/index.js"
 compatibility_date = "2026-10-01"
@@ -17,3 +19,7 @@ TZ_OFFSET_MINUTES = "330"  # Sri Lanka, UTC+5:30 — decides what "today" is
 # request logs in the Cloudflare dashboard (Workers → monthly-plan-bridge → Logs), to see what Instinct sends
 [observability]
 enabled = true
+
+# (temporary) apply the Notion inbox every minute — remove with src/notion-inbox.js
+[triggers]
+crons = ["* * * * *"]

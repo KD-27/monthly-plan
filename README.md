@@ -32,6 +32,7 @@ Monthly Plan/
 ├── index.html            the whole app
 ├── manifest.webmanifest  makes it installable on a phone (icon, full screen)
 ├── sw.js                 the phone's offline copy of the app
+├── instinct-bridge/      Cloudflare Worker that lets Instinct (WhatsApp) read and update the log
 ├── config.example.js     template for your own settings — copy it to config.local.js
 ├── config.local.js       (local only — never committed) your day one, tasks, points, targets
 ├── LICENSE               MIT
@@ -79,6 +80,7 @@ phone; the log reaches it through your private Firestore folder, never through t
   The web config in `index.html` is not a secret; the sign-in and these rules are what keep the log private.
 - **The phone layout.** Under 640 px wide the app turns into pages picked from a bar at the bottom: **Today** (the day sheet, always on today), **Calendar** (tap a day to open it), **Notes**, **Deadlines** (mind maps below them, to look at only — drag to pan, pinch to zoom) and **More** (money, journal, analytics, rank, dark mode, settings). The flip clock and Focus stay on the laptop.
 - **Installing.** Hosted on GitHub Pages, opened in Chrome on the phone → ⋮ → *Install* (pick *Install*, not *Create shortcut*, if Chrome asks); it then opens full screen from its own icon. `sw.js` keeps an offline copy of the page; the page is fetched fresh whenever there's a connection, so pushed changes arrive on the next open.
+- **Instinct (WhatsApp).** Text or voice-message Instinct — *"drank 500 ml, went to the gym"*, *"note: call the bank"*, *"deadline thesis draft 20 Oct"*, *"how did I do this week?"* — and it updates the log through `instinct-bridge/`, a Cloudflare Worker with a secret key that writes the same Firestore documents; the app shows the change live. **For now the bridge is read-only** (Instinct's tool can only read from this account): Instinct answers questions about the log, and changes are made in the app. Settings → **Instinct AI** keeps the bridge's address and key on that device (never in the log), tests the connection and copies the instructions to paste into the Instinct chat. Every change it makes is logged and can be undone; setup and endpoints are in `instinct-bridge/README.md`.
 - **Trying it safely.** `?demo=1&cloud=1` syncs the demo's sample data through the real Firebase, to `users/{uid}/demo` — apart from the real log.
 
 ## Daily tasks and points
@@ -187,10 +189,11 @@ Read `CLAUDE.md` first — it holds the rules for changing the app safely (live 
 | ANALYTICS | charts and panels |
 | CSV | File System Access link (handle kept in IndexedDB `monthlyPlanFS`), export / import |
 | MISC | toast, demo bar, start-up and the midnight rollover |
+| INSTINCT | the Settings card (`instinctPanel`, `instinctAct`) and `instinctPrompt`, the instructions pasted into Instinct; the bridge itself is `instinct-bridge/src/index.js` |
 | PHONE | `phoneApply` / `phoneTab` (the bottom bar's pages), `renderPMore`; its layout is the PHONE block at the end of the CSS |
 | FIREBASE (module) | `firebaseCloud` — sign-in, the Firestore listener and writes, behind the small interface CLOUD SYNC uses; tests hand in `window.MP_CLOUD_TEST` instead |
 
-Other storage keys (kept out of the log on purpose): `monthlyPlan.demo.v1` (demo log), `<store key>.rank` (last rank seen, for the one-time "Rank up / Rank down" toast), `<store key>.cloudUid` (this device has synced with that account before), `monthlyPlan.theme` (the theme, applied before first paint), `monthlyPlan.config` (the phone's copy of your settings), `monthlyPlan.start` (day one, when no `START` is configured).
+Other storage keys (kept out of the log on purpose): `monthlyPlan.demo.v1` (demo log), `<store key>.rank` (last rank seen, for the one-time "Rank up / Rank down" toast), `<store key>.cloudUid` (this device has synced with that account before), `monthlyPlan.theme` (the theme, applied before first paint), `monthlyPlan.config` (the phone's copy of your settings), `monthlyPlan.start` (day one, when no `START` is configured), `monthlyPlan.instinct` (the bridge's address and key, this device only).
 
 To add a task: append it to `TASKS` in your `config.local.js` with `since:'YYYY-MM-DD'` (the day it starts counting), then reload. Don't change `pts` on an existing task without a dated rule — past scores are recomputed from the log, so an undated change rewrites history.
 
@@ -211,6 +214,7 @@ To add a task: append it to `TASKS` in your `config.local.js` with `since:'YYYY-
 | 5 Oct 2026 | Mind maps redesigned: one mode, tapered branches, spring motion, undo/redo; rails show whole tiles only. |
 | 6 Oct 2026 | Settings (profile, show/hide parts, data & backups) under `_prefs`; dark theme; the flip clock opens full screen. |
 | 7 Oct 2026 | Sync through Firebase (Google sign-in, Firestore); the log moved to the cloud with `data.json` kept as the laptop's backup. Phone layout and installable app (GitHub Pages, `manifest.webmanifest`, `sw.js`). |
+| 14 Oct 2026 | Instinct (WhatsApp) connected through a Cloudflare Worker bridge (`instinct-bridge/`): log, notes, deadlines and mind maps by text or voice, with a change log and undo. |
 
 ## License
 

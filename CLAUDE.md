@@ -15,6 +15,10 @@ features, scoring, and folder layout. This file is the rules for changing it saf
 - The log is also live in Firestore (`users/{uid}/db`), synced to the user's phone. A bad write
   there reaches every device — test sync only with a fake (`window.MP_CLOUD_TEST`, see README)
   or `?demo=1&cloud=1` (sample data, kept under `users/{uid}/demo`).
+- `instinct-bridge/` writes the real Firestore log when deployed with `COLLECTION = "db"`. Test it
+  against a fake Firestore (import `src/index.js`, mock `fetch`), or deployed with
+  `COLLECTION = "demo"`. Its scoring copies the app's SCORING — change both together and check
+  they agree on the demo days.
 - The app is served by `server.py` on `127.0.0.1:8731` (started by `Monthly Plan.bat`). After
   changing `server.py`, the running server keeps the old code until the app window is closed
   and reopened — tell the user.

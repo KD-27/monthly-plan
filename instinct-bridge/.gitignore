@@ -1,0 +1,7 @@
+# secrets never leave this machine
+.dev.vars
+*.json.key
+service-account*.json
+secrets.json
+node_modules/
+.wrangler/

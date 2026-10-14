@@ -1197,6 +1197,13 @@ body.cal-view .app{ width:max-content; max-width:100%; }
 @media (max-width:600px){ .sheet.set-sheet{ width:100%; transform:translateY(100%); } }
 .set-body{ padding:14px 18px 24px; display:flex; flex-direction:column; gap:14px; }
 .set-profile{ display:flex; align-items:center; gap:14px; }
+.ia-row{ display:flex; align-items:center; gap:8px; margin:0 0 9px; }
+.ia-row label{ flex:none; width:62px; font-size:12px; font-weight:600; color:var(--ink-3); }
+.ia-row .set-in{ font-size:13px; padding:8px 11px; }
+.ia-eye{ flex:none; width:34px; height:34px; border-radius:var(--r-sm); border:1px solid var(--line-2); background:var(--surface); color:var(--ink-3); display:grid; place-items:center; }
+.ia-id{ font:12px/1.4 ui-monospace, Consolas, monospace; color:var(--ink-2); background:var(--surface-2); border:1px solid var(--line); border-radius:var(--r-sm); padding:7px 10px; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ia-state{ font-size:12.5px; margin-top:10px; color:var(--ink-3); min-height:18px; }
+.ia-state.ok{ color:var(--good-ink); } .ia-state.bad{ color:var(--bad-ink); }
 .set-in{ flex:1; min-width:0; padding:9px 12px; border-radius:var(--r-sm); border:1px solid var(--line-2); background:var(--surface);
   font-size:14px; transition:border-color .2s, box-shadow .2s; }
 .set-in:focus{ outline:none; border-color:var(--ink-3); box-shadow:0 0 0 3px rgba(166,152,127,.14); }
@@ -2296,7 +2303,11 @@ function cloudBoxHTML(){
       <span class="who"><b>${escHtml(u.email || u.name || 'Signed in')}</b><em>${line}</em></span></div>
     <div class="data-row"><button class="ghost" id="cloudOut">Sign out</button></div>`;
 }
-function cloudShow(){ const b = document.getElementById('cloudBox'); if (b) b.innerHTML = cloudBoxHTML(); }
+function cloudShow(){
+  const b = document.getElementById('cloudBox'); if (b) b.innerHTML = cloudBoxHTML();
+  const ia = document.getElementById('iaBox');            // the Instinct card shows the account id once signed in
+  if (ia && !!CLOUD.user !== !!ia.querySelector('.ia-id')) ia.outerHTML = instinctPanel();
+}
 
 const blankDay = () => ({ checks:{}, water:0, sleep:null, money:0, big:[], gym:false });
 
@@ -5293,6 +5304,7 @@ function renderSettings(){
   const theme = p.theme || 'light';
   document.getElementById('setBody').innerHTML = `
     <div class="panel" id="cloudBox">${cloudBoxHTML()}</div>
+    ${instinctPanel()}
     <div class="panel">
       <h3>Appearance</h3>
       <div class="cap">Light is the original look. Match system follows ${PHONE ? 'the phone’s' : 'Windows’'} own setting.</div>
@@ -5321,8 +5333,10 @@ document.getElementById('setBody').addEventListener('click', e=>{
   const b = e.target.closest('[data-theme-pick]'); if (b) setTheme(b.dataset.themePick, centreOf(b));
   if (e.target.closest('#cloudIn')) cloudSignIn();
   if (e.target.closest('#cloudOut')) cloudSignOut();
+  const ia = e.target.closest('[data-ia]'); if (ia) instinctAct(ia.dataset.ia, ia);
 });
 document.getElementById('setBody').addEventListener('input', e=>{
+  if (e.target.id === 'iaUrl' || e.target.id === 'iaKey') return instinctSave();
   if (e.target.id !== 'setName') return;
   prefsWrite().name = e.target.value.trim();
   if (!prefs().name) delete prefs().name;
@@ -5349,6 +5363,97 @@ function closeSettings(){
 document.getElementById('setClose').addEventListener('click', closeSettings);
 setScrim.addEventListener('click', closeSettings);
 document.addEventListener('keydown', e=>{ if (e.key === 'Escape' && setPanel.classList.contains('on')) closeSettings(); });
+
+/* ============================================================
+   INSTINCT — log by WhatsApp text or voice
+
+   Instinct (the WhatsApp assistant) can't sign in with Google, so it talks to
+   a small Cloudflare Worker (instinct-bridge/ in this repo) with a secret key;
+   the Worker reads and writes this same log in Firestore, so its changes show
+   up here live. This card keeps the Worker's address and key on this device
+   (localStorage — never in the log, so never synced), tests the connection,
+   and copies the instructions to paste into the Instinct chat.
+   ============================================================ */
+const IA_KEY = 'monthlyPlan.instinct';
+function instinctConf(){ try { return JSON.parse(localStorage.getItem(IA_KEY)) || {}; } catch { return {}; } }
+function instinctSave(){
+  const url = (document.getElementById('iaUrl').value || '').trim().replace(/\/+$/, '');
+  const key = (document.getElementById('iaKey').value || '').trim();
+  try { localStorage.setItem(IA_KEY, JSON.stringify({ url, key })); } catch {}
+  const st = document.getElementById('iaState'); if (st){ st.textContent = ''; st.className = 'ia-state'; }
+}
+function instinctPanel(){
+  if (DEMO && !window.MP_CLOUD_TEST && !new URLSearchParams(location.search).has('cloud')) return '';
+  const c = instinctConf(), uid = CLOUD.user && CLOUD.user.uid;
+  const eye = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+  return `<div class="panel" id="iaBox">
+    <h3>Instinct AI</h3>
+    <div class="cap">Log by WhatsApp text or voice — Instinct writes to this same log through your bridge, and it shows up here live.</div>
+    ${uid ? `<div class="ia-row"><label>Account</label><span class="ia-id" title="${escHtml(uid)}">${escHtml(uid)}</span>
+      <button class="ghost" type="button" data-ia="uid">Copy</button></div>` : ''}
+    <div class="ia-row"><label for="iaUrl">Bridge</label><input class="set-in" id="iaUrl" placeholder="https://monthly-plan-bridge.….workers.dev" autocomplete="off" spellcheck="false" value="${escHtml(c.url || '')}"></div>
+    <div class="ia-row"><label for="iaKey">Key</label><input class="set-in" id="iaKey" type="password" placeholder="The bridge's secret key" autocomplete="off" spellcheck="false" value="${escHtml(c.key || '')}">
+      <button class="ia-eye" type="button" data-ia="eye" title="Show or hide the key" aria-label="Show or hide the key">${eye}</button></div>
+    <div class="data-row"><button class="ghost" type="button" data-ia="test">Test connection</button>
+      <button class="solid" type="button" data-ia="prompt">Copy prompt for Instinct</button></div>
+    <div class="ia-state" id="iaState" role="status"></div>
+  </div>`;
+}
+async function instinctAct(what, btn){
+  const st = document.getElementById('iaState'), c = instinctConf();
+  const say = (t, cls) => { st.textContent = t; st.className = 'ia-state' + (cls ? ' ' + cls : ''); };
+  if (what === 'eye'){ const k = document.getElementById('iaKey'); k.type = k.type === 'password' ? 'text' : 'password'; return; }
+  if (what === 'uid'){ await copyText(CLOUD.user.uid); return say('Account id copied', 'ok'); }
+  if (!c.url || !c.key) return say('Fill in the bridge address and its key first.', 'bad');
+  if (what === 'test'){
+    say('Testing…');
+    try {
+      const r = await fetch(c.url + '/api/health', { headers: { Authorization: 'Bearer ' + c.key } });
+      const d = await r.json().catch(() => ({}));
+      if (r.status === 401) return say('The bridge answered, but the key is wrong.', 'bad');
+      if (!r.ok || !d.ok) return say('The bridge answered with a problem: ' + (d.error || r.status), 'bad');
+      say(`Connected · ${d.collection === 'db' ? 'your real log' : 'the demo data (testing)'} · ${d.tasks} tasks · today is ${d.today}`, 'ok');
+    } catch { say('Couldn’t reach the bridge — check the address.', 'bad'); }
+  }
+  if (what === 'prompt'){ await copyText(instinctPrompt(c.url)); say('Copied (without the key) — paste it into Instinct, and give it the key only through its secure link.', 'ok'); }
+}
+async function copyText(t){
+  try { await navigator.clipboard.writeText(t); }
+  catch { const a = document.createElement('textarea'); a.value = t; document.body.appendChild(a); a.select(); document.execCommand('copy'); a.remove(); }
+}
+/** The instructions Instinct keeps for this app. The address is filled in; the key never is —
+    a chat isn't a place for secrets, so Instinct collects it through its own private link. */
+function instinctPrompt(url){
+  return `You are connected to my Monthly Plan app, my daily discipline tracker, through a private REST API. Use it whenever I tell you (by text or voice) what I did, or ask about my day, my notes, deadlines or mind maps.
+
+CONNECTION
+- Base URL: ${url}
+- Send on every request: Authorization: Bearer <the API key I give you privately, through your secure link, never in this chat>  and  Content-Type: application/json
+- Every reply is JSON with "ok". When "ok" is false, read "error" (and "did_you_mean" or "options" if present) and tell me plainly, or ask me which one I meant.
+
+HOW MY APP WORKS
+- Each day has tasks I tick. Done tasks add their points; tasks not done SUBTRACT them. That is the point of the app, so never soften it. The day's score locks at midnight (Sri Lanka time).
+- Each day also has: water (ml, target 3000), sleep (hours), weight (kg), money spent (LKR), big purchases (one-offs outside the daily budget) and a short journal (one page).
+- "Today" is the default. Days can be logged up to today, never ahead.
+
+ENDPOINTS
+1. GET /api/summary : today's sheet (score, done and not done, water, sleep, spent), last-7-day average, open deadlines.
+2. GET /api/day?date=today|yesterday|YYYY-MM-DD  and  GET /api/days?from=YYYY-MM-DD&to=YYYY-MM-DD (score per day).
+3. GET /api/tasks : my task names. Use these words when ticking.
+4. POST /api/day : log anything for one day in ONE call. Only include what I mentioned:
+   {"date":"today","done":["gym","read 20 minutes"],"undone":["lunch"],"water_add_ml":500,"sleep_hours":7,"weight_kg":78.4,"spent_add":1200,"big_purchase":{"amount":15000,"note":"headphones"},"journal_append":"..."}
+   "gym" or "went to gym" in done marks a gym day. "I drank 500 ml" is water_add_ml (it adds); use water_ml only when I give the day's total. Same for spent_add and spent.
+5. Notes: GET /api/notes | POST /api/note {"text":"..."} (lines starting with "- " become a bullet list) | PATCH /api/note {"match":"words from it","append":"..."} or {"match":"...","text":"..."} | DELETE /api/note?match=words
+6. Deadlines: GET /api/deadlines | POST /api/deadline {"title":"...","due":"YYYY-MM-DD or friday or 20 Oct","note":"..."} | PATCH /api/deadline {"match":"words","status":"done" or "cancelled" or "open"}. Deadlines are never deleted.
+7. Mind maps: GET /api/mindmaps | GET /api/mindmap?match=words | POST /api/mindmap {"title":"...","branches":[{"text":"Writing","children":["Abstract","Results"]},"Submission"],"deadline":"words from a deadline (optional)"} | PATCH /api/mindmap {"match":"...","add":{"under":"box","items":["..."]},"tick":["box"],"untick":["box"],"rename":{"box":"old","to":"new"},"remove":["box"]} | DELETE /api/mindmap?match=words
+8. GET /api/log : what you changed recently | POST /api/undo : take your last change back. When I say "undo", "that's wrong" or "you misheard", call /api/undo.
+
+HOW TO REPLY
+- From a voice note, catch every item and send them together in one /api/day call.
+- After each change, answer in one or two short lines with what you saved and where the day stands, using the reply's "changed" and "day" fields. Example: "✓ Gym, Read 20 min · Water 1,750/3,000 ml · Score 42 so far".
+- Never invent task names. If one doesn't match, offer the "did_you_mean" options.
+- Money is in LKR.`;
+}
 
 /* ============================================================
    DAY SHEET

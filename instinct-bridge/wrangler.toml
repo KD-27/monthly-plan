@@ -1,0 +1,19 @@
+# Monthly Plan — the Instinct bridge. Deploy: npx wrangler deploy
+# Secrets are never in this file — set them with `npx wrangler secret put <NAME>`:
+#   API_SECRET_KEY         the token Instinct sends (Authorization: Bearer …)
+#   FIREBASE_CLIENT_EMAIL  the service account's email
+#   FIREBASE_PRIVATE_KEY   the service account's private key (PEM)
+#   USER_UID               your Firebase account id (Settings → Instinct AI → Account)
+name = "monthly-plan-bridge"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+
+[vars]
+FIREBASE_PROJECT_ID = "monthly-plan-b7b30"
+COLLECTION = "db"          # "db" = the real log; "demo" = the demo's sample data, for testing
+READ_ONLY = "1"            # "1" = reads only, every change is refused; "0" lets changes through
+TZ_OFFSET_MINUTES = "330"  # Sri Lanka, UTC+5:30 — decides what "today" is
+
+# request logs in the Cloudflare dashboard (Workers → monthly-plan-bridge → Logs), to see what Instinct sends
+[observability]
+enabled = true

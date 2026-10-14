@@ -55,7 +55,9 @@ export default {
       const handler = ROUTES[`${request.method} ${url.pathname.replace(/\/+$/, '')}`];
       if (!handler) throw new Bad(`No such endpoint: ${request.method} ${url.pathname}. GET /api/help lists them.`, 404);
       const ctx = await makeContext(request, env, url);
-      return json({ ok: true, ...(await handler(ctx)) });
+      // say on every answer which log this is, so nothing stale in the chat can say otherwise
+      const source = ctx.fs.place.docs === 'demo' ? 'demo sample data (for testing)' : 'real log, live';
+      return json({ ok: true, source, ...(env.READ_ONLY === '1' ? { access: 'read-only' } : {}), ...(await handler(ctx)) });
     } catch (err){
       if (err instanceof Bad) return json({ ok: false, error: err.message, ...(err.extra || {}) }, err.status);
       console.error(err);

@@ -4,7 +4,7 @@
    Instinct can write to Notion but can't send POST to us, so it leaves each
    change as a row in a Notion database ("Monthly Plan inbox"):
      Request (title)   what was asked, in words — "water +500, gym done"
-     Action  (select)  day · note · edit note · delete note · deadline · edit deadline
+     Action  (select)  day · note · edit note · delete note · deadline · edit deadline · delete deadline
                        · mind map · edit mind map · delete mind map · undo
      Body    (text)    the JSON the matching API endpoint takes
      Status  (select)  empty or New → Working → Done / Failed   (set by the bridge)
@@ -21,7 +21,7 @@ const NOTION_VERSION = '2022-06-28';
 const ACTIONS = {
   'day': ['POST', '/api/day'],
   'note': ['POST', '/api/note'], 'edit note': ['PATCH', '/api/note'], 'delete note': ['DELETE', '/api/note'],
-  'deadline': ['POST', '/api/deadline'], 'edit deadline': ['PATCH', '/api/deadline'],
+  'deadline': ['POST', '/api/deadline'], 'edit deadline': ['PATCH', '/api/deadline'], 'delete deadline': ['DELETE', '/api/deadline'],
   'mind map': ['POST', '/api/mindmap'], 'edit mind map': ['PATCH', '/api/mindmap'], 'delete mind map': ['DELETE', '/api/mindmap'],
   'undo': ['POST', '/api/undo'],
 };

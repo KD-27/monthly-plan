@@ -876,6 +876,8 @@ body.cal-view .app{ width:max-content; max-width:100%; }
 .dl-acts button{ padding:3px 9px; border-radius:99px; border:1px solid var(--line); background:var(--surface-2);
   font-size:11.5px; font-weight:600; color:var(--ink-2); transition:background .2s, color .2s; }
 .dl-acts button:hover{ background:var(--hover); color:var(--ink); }
+.dl-acts button.dl-del{ color:var(--bad-ink); }
+.dl-acts button.dl-del:hover, .dl-acts button.dl-del.arm{ background:var(--bad-soft); border-color:var(--bad-line); color:var(--bad-ink); }
 
 /* ============================================================
    STICKY NOTES — a light-orange rail on the left edge
@@ -4262,14 +4264,14 @@ function dlRow(d, editing){
     return `<div class="dl-row ${w.cls}${editing ? ' editing' : ''}" data-id="${d.id}">
       <button class="dl-tick" type="button" data-act="done" title="Mark completed" aria-label="Mark “${escHtml(d.title)}” completed"></button>
       <div class="dl-txt">${title}<div class="dl-when">${w.date} · <b>${w.rel}</b></div>${dlNote(d)}</div>
-      <div class="dl-acts"><button type="button" data-act="edit">Edit</button><button type="button" data-act="cancel" title="Cancel this deadline — it moves to Cancelled">Cancel</button></div>
+      <div class="dl-acts"><button type="button" data-act="edit">Edit</button><button type="button" data-act="cancel" title="Cancel this deadline — it moves to Cancelled">Cancel</button><button type="button" class="dl-del" data-act="delete" title="Delete for good — tap twice">Delete</button></div>
     </div>`;
   }
   const done = d.status === 'done';
   return `<div class="dl-row ${d.status}" data-id="${d.id}">
     <span class="dl-mark">${done ? '✓' : '✕'}</span>
     <div class="dl-txt">${title}<div class="dl-when">${done ? 'Completed' : 'Cancelled'} ${dlShort(d.closed || d.due)} · was due ${dlShort(d.due)}</div>${dlNote(d)}</div>
-    <div class="dl-acts"><button type="button" data-act="reopen">Reopen</button></div>
+    <div class="dl-acts"><button type="button" data-act="reopen">Reopen</button><button type="button" class="dl-del" data-act="delete" title="Delete for good — tap twice">Delete</button></div>
   </div>`;
 }
 
@@ -4379,7 +4381,28 @@ function wireDlManager(root){
     else if (a.dataset.act === 'done')   dlSetStatus(id, 'done', row);
     else if (a.dataset.act === 'cancel') dlSetStatus(id, 'cancelled', row);
     else if (a.dataset.act === 'reopen') dlSetStatus(id, 'open');
+    else if (a.dataset.act === 'delete') dlDelete(id, row, a, root);
   });
+}
+/** Delete a deadline for good — for one added by mistake. A second tap confirms, so one slip
+    can't lose it; a mind map linked to it keeps its boxes and just loses the link. */
+function dlDelete(id, row, btn, root){
+  if (!btn.classList.contains('arm')){
+    btn.classList.add('arm'); btn.textContent = 'Tap again';
+    clearTimeout(btn._disarm);
+    btn._disarm = setTimeout(()=>{ btn.classList.remove('arm'); btn.textContent = 'Delete'; }, 3000);
+    return;
+  }
+  const gone = dlFind(id); if (!gone) return;
+  const apply = ()=>{
+    DB[DL_KEY] = dlAll().filter(d => d.id !== id);
+    mmAll().forEach(m => { if (m.deadline === id) delete m.deadline; });
+    if (root.dataset.edit === id) delete root.dataset.edit;
+    save(); renderDeadlines(); toast(`Deleted “${gone.title}”`);
+  };
+  if (reducedMotion.matches || !row) return apply();
+  row.classList.add('leaving');
+  setTimeout(apply, 260);
 }
 wireDlManager(dlPanelBody);
 
@@ -5450,9 +5473,10 @@ ENDPOINTS
 3. GET /api/tasks : my task names. Use these words when ticking.
 4. POST /api/day : log anything for one day in ONE call. Only include what I mentioned:
    {"date":"today","done":["gym","read 20 minutes"],"undone":["lunch"],"water_add_ml":500,"sleep_hours":7,"weight_kg":78.4,"spent_add":1200,"big_purchase":{"amount":15000,"note":"headphones"},"journal_append":"..."}
+   To take back a big purchase logged by mistake: {"remove_big_purchase":{"match":"words from its note"}} or {"amount":15000} (both if two look alike).
    "gym" or "went to gym" in done marks a gym day. "I drank 500 ml" is water_add_ml (it adds); use water_ml only when I give the day's total. Same for spent_add and spent.
 5. Notes: GET /api/notes | POST /api/note {"text":"..."} (lines starting with "- " become a bullet list) | PATCH /api/note {"match":"words from it","append":"..."} or {"match":"...","text":"..."} | DELETE /api/note?match=words
-6. Deadlines: GET /api/deadlines | POST /api/deadline {"title":"...","due":"YYYY-MM-DD or friday or 20 Oct","note":"..."} | PATCH /api/deadline {"match":"words","status":"done" or "cancelled" or "open"}. Deadlines are never deleted.
+6. Deadlines: GET /api/deadlines | POST /api/deadline {"title":"...","due":"YYYY-MM-DD or friday or 20 Oct","note":"..."} | PATCH /api/deadline {"match":"words","status":"done" or "cancelled" or "open"} | DELETE /api/deadline?match=words (only for one added by mistake; done or cancelled keeps it).
 7. Mind maps: GET /api/mindmaps | GET /api/mindmap?match=words | POST /api/mindmap {"title":"...","branches":[{"text":"Writing","children":["Abstract","Results"]},"Submission"],"deadline":"words from a deadline (optional)"} | PATCH /api/mindmap {"match":"...","add":{"under":"box","items":["..."]},"tick":["box"],"untick":["box"],"rename":{"box":"old","to":"new"},"remove":["box"]} | DELETE /api/mindmap?match=words
 8. GET /api/log : what you changed recently | POST /api/undo : take your last change back. When I say "undo", "that's wrong" or "you misheard", call /api/undo.
 

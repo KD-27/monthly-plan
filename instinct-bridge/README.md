@@ -39,8 +39,8 @@ even while read-only and changes nothing — it shows whether a caller can send 
   the app made a moment earlier — it re-reads and retries.
 - Every change is logged to `users/{uid}/instinct` with the value before it.
   `POST /api/undo` puts the last one back (and refuses if the app has changed it since).
-- The app's rules hold: no logging days that haven't happened, deadlines are never deleted (only
-  done / cancelled), a journal entry must fit on its page.
+- The app's rules hold: no logging days that haven't happened, no clearing a whole day, a journal
+  entry must fit on its page (700 characters).
 - The service account gets **Cloud Datastore User** only — Firestore, nothing else in the project.
 
 ## Setup
@@ -77,9 +77,9 @@ All take and return JSON; every request needs `Authorization: Bearer <API_SECRET
 | `GET /api/day?date=` | one day: score, done / not done, water, sleep, money, journal |
 | `GET /api/days?from=&to=` | score per day (up to two months) |
 | `GET /api/tasks` | the task names to use |
-| `POST /api/day` | `{date?, done[], undone[], gym?, water_add_ml?, water_ml?, sleep_hours?, weight_kg?, spent_add?, spent?, big_purchase?:{amount, note}, journal_append?, journal?}` |
+| `POST /api/day` | `{date?, done[], undone[], gym?, water_add_ml?, water_ml?, sleep_hours?, weight_kg?, spent_add?, spent?, big_purchase?:{amount, note}, remove_big_purchase?:{match?, amount?}, journal_append?, journal?}` |
 | `GET/POST/PATCH/DELETE /api/note(s)` | `{text, color?}` · `{id\|match, text?\|append?}` |
-| `GET/POST/PATCH /api/deadline(s)` | `{title, due, note?}` · `{id\|match, status?: done\|cancelled\|open, …}` |
+| `GET/POST/PATCH/DELETE /api/deadline(s)` | `{title, due, note?}` · `{id\|match, status?: done\|cancelled\|open, …}` · DELETE `{id\|match}` (a linked map keeps its boxes) |
 | `GET/POST/PATCH/DELETE /api/mindmap(s)` | `{title, branches, deadline?}` · `{id\|match, add?:{under?, items}, tick?, untick?, rename?, remove?}` |
 | `GET /api/log` · `POST /api/undo` | recent changes · take the last one back |
 

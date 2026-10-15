@@ -406,6 +406,18 @@ const ROUTES = {
       if (b.weight_kg != null){ e.weight = Math.round(num(b.weight_kg, 'weight_kg', 30, 250) * 10) / 10; said.push(`weight ${e.weight} kg`); }
       if (b.spent_add != null){ e.money = Math.max(0, Math.round((e.money || 0) + num(b.spent_add, 'spent_add', -1e7, 1e7))); said.push(`spent ${e.money}`); }
       if (b.spent != null){ e.money = Math.round(num(b.spent, 'spent', 0, 1e7)); said.push(`spent ${e.money}`); }
+      // a big purchase logged by mistake: by words from its note and/or its amount; two matches ask back
+      for (const p of [].concat(b.remove_big_purchase || [])){
+        const want = (p && typeof p === 'object') ? p : (isFinite(Number(p)) && String(p).trim() !== '' ? { amount: p } : { match: p });
+        if (want.amount == null && !want.match) throw new Bad('Say which big purchase to remove — words from its note, or its amount.');
+        const listed = () => e.big.map(x => ({ amount: x.amt, note: x.note || '' }));
+        const hits = e.big.filter(x => (want.amount == null || Math.round(Number(want.amount)) === x.amt)
+          && (!want.match || String(x.note || '').toLowerCase().includes(String(want.match).toLowerCase().trim())));
+        if (!hits.length) throw new Bad(`No big purchase on ${k} matches that.`, 404, { big_purchases: listed() });
+        if (hits.length > 1) throw new Bad('More than one big purchase matches — which one?', 409, { options: hits.map(x => ({ amount: x.amt, note: x.note || '' })) });
+        e.big.splice(e.big.indexOf(hits[0]), 1);
+        said.push(`removed big purchase ${hits[0].amt}${hits[0].note ? ' (' + hits[0].note + ')' : ''}`);
+      }
       for (const p of [].concat(b.big_purchase || [])){
         const amt = Math.round(num(p.amount, 'big_purchase.amount', 1, 1e8));
         e.big.push({ amt, note: String(p.note || '').slice(0, 40) }); said.push(`big purchase ${amt}${p.note ? ' (' + p.note + ')' : ''}`);
@@ -418,7 +430,7 @@ const ROUTES = {
         if (text) e.note = text; else delete e.note;
         said.push('journal saved');
       }
-      if (!said.length) throw new Bad('Nothing to change — say what to log (done, undone, gym, water_add_ml, sleep_hours, weight_kg, spent_add, big_purchase, journal_append).');
+      if (!said.length) throw new Bad('Nothing to change — say what to log (done, undone, gym, water_add_ml, sleep_hours, weight_kg, spent_add, big_purchase, remove_big_purchase, journal_append).');
       return e;
     });
     return { changed: said, day: dayView(ctx, k, after) };
@@ -452,7 +464,7 @@ const ROUTES = {
     return { deleted: gone };
   },
 
-  /* ---- deadlines (never deleted — done or cancelled keeps them, like the app) ---- */
+  /* ---- deadlines (done / cancelled keep them; DELETE removes one added by mistake, like the app's button) ---- */
   'GET /api/deadlines': async ctx => {
     const status = ctx.q('status') || 'open';
     const list = ((await ctx.fs.get('_deadlines')).value || []).filter(d => status === 'all' || d.status === status).sort((a, b) => a.due.localeCompare(b.due));
@@ -481,6 +493,19 @@ const ROUTES = {
       return list;
     });
     return { deadline: out };
+  },
+
+  /* Delete one added by mistake (done / cancelled keep it instead). A mind map linked to it keeps its
+     boxes and loses the link — unlinked first, so the deletion is the last change and an undo brings
+     the deadline back. */
+  'DELETE /api/deadline': async ctx => {
+    const target = pick((await ctx.fs.get('_deadlines')).value || [], ctx.body, x => deadlineView(ctx, x), 'deadline');
+    const maps = (await ctx.fs.get('_mindmaps')).value || [];
+    const linked = maps.some(m => m.deadline === target.id);
+    if (linked) await change(ctx, '_mindmaps', 'unlink mind map from deleted deadline',
+      cur => (cur || []).map(m => m.deadline === target.id ? (({ deadline, ...rest }) => rest)(m) : m));
+    await change(ctx, '_deadlines', 'delete deadline', cur => (cur || []).filter(d => d.id !== target.id));
+    return { deleted: target.title, ...(linked ? { mind_map_unlinked: true } : {}) };
   },
 
   /* ---- mind maps ---- */
@@ -617,9 +642,9 @@ const HELP = [
   'GET  /api/day?date=today|yesterday|YYYY-MM-DD — one day in full',
   'GET  /api/days?from=YYYY-MM-DD&to=YYYY-MM-DD — scores day by day (≤ 2 months)',
   'GET  /api/tasks — the task names to use',
-  'POST /api/day {date?, done:[…], undone:[…], gym?, water_add_ml?, water_ml?, sleep_hours?, weight_kg?, spent_add?, spent?, big_purchase?:{amount, note}, journal_append?, journal?}',
+  'POST /api/day {date?, done:[…], undone:[…], gym?, water_add_ml?, water_ml?, sleep_hours?, weight_kg?, spent_add?, spent?, big_purchase?:{amount, note}, remove_big_purchase?:{match?, amount?}, journal_append?, journal?}',
   'GET  /api/notes · POST /api/note {text, color?} · PATCH /api/note {id|match, text?|append?, color?} · DELETE /api/note {id|match}',
-  'GET  /api/deadlines?status=open|done|cancelled|all · POST /api/deadline {title, due, note?} · PATCH /api/deadline {id|match, status?, title?, due?, note?}',
+  'GET  /api/deadlines?status=open|done|cancelled|all · POST /api/deadline {title, due, note?} · PATCH /api/deadline {id|match, status?, title?, due?, note?} · DELETE /api/deadline {id|match}',
   'GET  /api/mindmaps · GET /api/mindmap?match=… · POST /api/mindmap {title, branches, deadline?} · PATCH /api/mindmap {id|match, add?:{under?, items}, tick?, untick?, rename?:{box?, to}, remove?} · DELETE /api/mindmap {id|match}',
   'GET  /api/log — recent changes made through here · POST /api/undo — take the last one back',
 ];
